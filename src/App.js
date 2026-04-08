@@ -23,7 +23,7 @@ export default function App() {
   return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0C0E13",fontFamily:"'DM Sans',sans-serif"}}>
       <div style={{textAlign:"center",maxWidth:400,padding:24}}>
-        <h1 style={{fontSize:26,color:"#E8EAF0",marginBottom:4}}>Winter<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Guard</span> Tote</h1>
+        <h1 style={{fontSize:26,color:"#E8EAF0",marginBottom:4}}>Judge<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Pro</span></h1>
         <p style={{fontSize:11,color:"#6B7590",marginBottom:24}}>Choose your preferred layout</p>
 
         <button onClick={()=>pick("2col")} style={{width:"100%",padding:"16px 20px",borderRadius:8,border:"2px solid #2A2F3D",background:"#14171E",color:"#E8EAF0",cursor:"pointer",marginBottom:10,textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>

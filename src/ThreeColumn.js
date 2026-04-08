@@ -353,7 +353,7 @@ export default function ThreeColumnApp() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `WGTote-${eventDate||"backup"}-${(judgeName||"judge").replace(/\s+/g,"-")}.json`;
+    a.download = `JudgePro-${eventDate||"backup"}-${(judgeName||"judge").replace(/\s+/g,"-")}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -404,7 +404,7 @@ export default function ThreeColumnApp() {
       const sheetData = [];
 
       // Header info
-      sheetData.push([eventVenue || "WinterGuard Tote Export"]);
+      sheetData.push([eventVenue || "JudgePro Export"]);
       sheetData.push([`${tote.className}${tote.round ? " - " + tote.round : ""}`, "", capObj.label, judgeName || "", eventDate || ""]);
       sheetData.push([]);
 
@@ -469,7 +469,7 @@ export default function ThreeColumnApp() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `WGTote-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.xlsx`;
+    a.download = `JudgePro-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -498,7 +498,7 @@ export default function ThreeColumnApp() {
       });
 
       let y = 12;
-      doc.setFontSize(14); doc.text(eventVenue || "WinterGuard Tote", 14, y); y += 6;
+      doc.setFontSize(14); doc.text(eventVenue || "JudgePro", 14, y); y += 6;
       doc.setFontSize(10); doc.text(`${tote.className}${tote.round ? " - " + tote.round : ""} | ${capObj.label}${judgeName ? " | " + judgeName : ""}${eventDate ? " | " + eventDate : ""}`, 14, y); y += 6;
 
       const headers = ["#", "Team", "Class", capObj.sub1, capObj.sub2, "Total"];
@@ -518,7 +518,7 @@ export default function ThreeColumnApp() {
       const rankBody = ranked.map((t, i) => { const row = [ordinal(i + 1), t.name, t.s1, ordinal(s1sorted.indexOf(t.id) + 1), t.s2, ordinal(s2sorted.indexOf(t.id) + 1), fmtTotal(t.tot), ordinal(totSorted.indexOf(t.id) + 1)]; if (factors) row.push(t.factored, ordinal(i + 1)); return row; });
       doc.autoTable({ startY: y, head: [rankHeaders], body: rankBody, theme: "grid", styles: { fontSize: 8, cellPadding: 1.5 }, headStyles: { fillColor: [30, 40, 60], textColor: 255 }, margin: { left: 14, right: 14 } });
     }
-    doc.save(`WGTote-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.pdf`);
+    doc.save(`JudgePro-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.pdf`);
   };
 
   const dirty = () => setSaved(false);
@@ -736,7 +736,7 @@ export default function ThreeColumnApp() {
     <div style={{maxWidth:1200,margin:"0 auto",padding:"4px 8px"}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 6px",borderBottom:"1px solid var(--bd)",marginBottom:8,flexWrap:"wrap",gap:4}}>
         <div>
-          <h1 style={{fontFamily:"'DM Sans',sans-serif",fontSize:26}}>Winter<span style={{color:"var(--ac)",fontStyle:"italic"}}>Guard</span> Tote</h1>
+          <h1 style={{fontFamily:"'DM Sans',sans-serif",fontSize:26}}>Judge<span style={{color:"var(--ac)",fontStyle:"italic"}}>Pro</span></h1>
           <p style={{fontSize:13,color:"var(--t3)"}}>
             {cap?`${cap.label}`:""}
             {judgeName?` — ${judgeName}`:""}
@@ -792,18 +792,18 @@ export default function ThreeColumnApp() {
         </Card>
         <Card>
           <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:22,marginBottom:8}}>Event Info</h2>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            <div style={{flex:"0 0 auto"}}>
-              <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Date</label>
-              <Inp type="date" value={eventDate} onChange={e=>{setEventDate(e.target.value);dirty()}} />
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <div>
+              <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
+              <Inp placeholder="Your name" value={judgeName} onChange={e=>{setJudgeName(e.target.value);dirty()}} style={{width:"100%",maxWidth:300}} />
             </div>
-            <div style={{flex:1,minWidth:120}}>
+            <div>
+              <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Date</label>
+              <Inp type="date" value={eventDate} onChange={e=>{setEventDate(e.target.value);dirty()}} style={{maxWidth:200}} />
+            </div>
+            <div>
               <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Venue / Event Name</label>
               <Inp placeholder="e.g. PPA Championships @ Wenatchee HS" value={eventVenue} onChange={e=>{setEventVenue(e.target.value);dirty()}} style={{width:"100%"}} />
-            </div>
-            <div style={{flex:"0 0 auto"}}>
-              <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
-              <Inp placeholder="Your name" value={judgeName} onChange={e=>{setJudgeName(e.target.value);dirty()}} />
             </div>
           </div>
         </Card>
@@ -1077,7 +1077,7 @@ export default function ThreeColumnApp() {
 
           <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.6}}>
             <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,color:"var(--t1)",marginBottom:4,marginTop:12}}>Getting Started</h3>
-            <p>WinterGuard Tote is a digital score tote sheet for winterguard judges. When you first open the app, enter the access code to get in, then choose your preferred layout (2 Column or 3 Column). Go to <b>Settings</b> to configure your theme, event info, and judge caption, then import a schedule or add teams manually.</p>
+            <p>JudgePro is a digital score tote sheet for winterguard judges. When you first open the app, choose your preferred layout (2 Column or 3 Column). Go to <b>Settings</b> to configure your theme, event info, and judge caption, then import a schedule or add teams manually.</p>
 
             <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,color:"var(--t1)",marginBottom:4,marginTop:14}}>Settings</h3>
             <p><b>Theme & Layout</b> — Toggle between Light and Dark mode. Use the <b>Switch Layout</b> button to go back to the 2 Column / 3 Column picker. Your preferences are saved.</p>
