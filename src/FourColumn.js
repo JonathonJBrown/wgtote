@@ -378,10 +378,7 @@ export default function FourColumnApp() {
   /* Export to XLSX using SheetJS */
   const exportXlsx = async () => {
     if (!cap) return;
-    if (!window.XLSX) {
-      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"; s.onload = r; s.onerror = () => { alert("Could not load spreadsheet library. Check your internet connection."); }; document.head.appendChild(s); });
-    }
-    if (!window.XLSX) return;
+    if (!window.XLSX) { alert("Spreadsheet library not loaded. Please refresh the page."); return; }
     const XLSX = window.XLSX;
     const wb = XLSX.utils.book_new();
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
@@ -475,13 +472,7 @@ export default function FourColumnApp() {
   /* Export to PDF using jsPDF */
   const exportPdf = async () => {
     if (!cap) return;
-    if (!window.jspdf) {
-      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"; s.onload = r; s.onerror = () => { alert("Could not load PDF library. Check your internet connection."); }; document.head.appendChild(s); });
-    }
-    if (!window.jspdf) return;
-    if (!window.jspdf.jsPDF.API.autoTable) {
-      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"; s.onload = r; document.head.appendChild(s); });
-    }
+    if (!window.jspdf) { alert("PDF library not loaded. Please refresh the page."); return; }
     const { jsPDF } = window.jspdf;
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
