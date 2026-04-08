@@ -1017,10 +1017,11 @@ export default function FourColumnApp() {
                     <div style={{fontSize:13,fontWeight:500,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{t.name}</div>
                     <textarea
                       value={notes[t.id]||""}
-                      onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);}}
+                      onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                      onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
                       placeholder="..."
-                      rows={2}
-                      style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.4,minHeight:40,maxWidth:"100%",boxSizing:"border-box"}}
+                      rows={1}
+                      style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.4,minHeight:28,maxWidth:"100%",boxSizing:"border-box",overflow:"hidden"}}
                     />
                   </div>
                 ))}

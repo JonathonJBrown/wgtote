@@ -942,10 +942,11 @@ export default function TwoColumnApp() {
                         <td style={{padding:"2px 3px",borderBottom:"1px solid var(--bd)"}}>
                           <textarea
                             value={notes[t.id]||""}
-                            onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);}}
+                            onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                            onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
                             placeholder="..."
                             rows={1}
-                            style={{width:"100%",padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.3,minHeight:22}}
+                            style={{width:"100%",padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:22,overflow:"hidden"}}
                           />
                         </td>
                       </tr>
