@@ -210,26 +210,26 @@ function Scale({ title, subtitle, teams, scores, onScore, trackH }) {
   return (
     <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>
       <div style={{textAlign:"center",marginBottom:2}}>
-        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,lineHeight:1.1}}>{title}</div>
-        {subtitle&&<div style={{fontSize:8,color:"var(--t3)"}}>{subtitle}</div>}
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:17,lineHeight:1.1}}>{title}</div>
+        {subtitle&&<div style={{fontSize:10,color:"var(--t3)"}}>{subtitle}</div>}
       </div>
       <div ref={ref} style={{position:"relative",height:trackH,background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",overflow:"hidden"}}>
         {BOXES.map(box=>(
           <div key={box.id} style={{position:"absolute",left:0,right:0,bottom:`${box.lo}%`,height:`${box.hi-box.lo+1}%`,background:box.bg,pointerEvents:"none"}}>
-            <div style={{position:"absolute",right:1,top:"50%",transform:"translateY(-50%) rotate(180deg)",writingMode:"vertical-rl",fontSize:7,color:box.color,opacity:.5,fontWeight:700,whiteSpace:"nowrap"}}>{box.label}</div>
+            <div style={{position:"absolute",right:1,top:"50%",transform:"translateY(-50%) rotate(180deg)",writingMode:"vertical-rl",fontSize:9,color:box.color,opacity:.5,fontWeight:700,whiteSpace:"nowrap"}}>{box.label}</div>
             {box.thirds.map((th,idx)=>{const lf=(th.v-box.lo)/(box.hi-box.lo+1);return(
               <div key={th.v} style={{position:"absolute",left:0,right:0,bottom:`${lf*100}%`,borderBottom:idx===0?`1.5px solid ${box.color}50`:`1px dashed ${box.color}25`,pointerEvents:"none"}}>
-                <span style={{position:"absolute",left:1,bottom:0,fontSize:7,color:box.color,opacity:.6,fontWeight:600}}>{th.v}</span>
-                {th.t&&<span style={{position:"absolute",left:15,bottom:0,fontSize:6,color:box.color,opacity:.4,whiteSpace:"nowrap"}}>{th.t}</span>}
+                <span style={{position:"absolute",left:1,bottom:0,fontSize:9,color:box.color,opacity:.6,fontWeight:600}}>{th.v}</span>
+                {th.t&&<span style={{position:"absolute",left:15,bottom:0,fontSize:8,color:box.color,opacity:.4,whiteSpace:"nowrap"}}>{th.t}</span>}
               </div>);})}
           </div>
         ))}
-        <div style={{position:"absolute",left:1,top:1,fontSize:7,color:"var(--t3)",fontWeight:600,zIndex:1}}>100</div>
+        <div style={{position:"absolute",left:1,top:1,fontSize:9,color:"var(--t3)",fontWeight:600,zIndex:1}}>100</div>
         {laid.map(item=>{const box=BOXES.find(b=>item.score>=b.lo&&item.score<=b.hi)||BOXES[2];const isDr=dr===item.id;return(
           <div key={item.id} onPointerDown={e=>onDown(e,item.id)} style={{position:"absolute",left:20,right:1,top:item.y,height:CH,display:"flex",alignItems:"center",gap:3,padding:"0 4px",background:isDr?`${box.color}20`:"var(--s3)",border:`1px solid ${isDr?box.color:"var(--bd2)"}`,borderRadius:3,cursor:isDr?"grabbing":"grab",zIndex:isDr?10:2,boxShadow:isDr?`0 2px 8px ${box.color}20`:"none",userSelect:"none",touchAction:"none"}}>
             <span style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:colorFor(item.className)}}/>
-            <span style={{flex:1,fontSize:9,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1}}>{item.name}</span>
-            <span style={{fontSize:10,fontWeight:700,color:box.color,minWidth:18,textAlign:"right",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{item.score}</span>
+            <span style={{flex:1,fontSize:12,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1}}>{item.name}</span>
+            <span style={{fontSize:13,fontWeight:700,color:box.color,minWidth:18,textAlign:"right",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{item.score}</span>
           </div>);})}
       </div>
     </div>
@@ -243,14 +243,14 @@ function RoundSelect({ value, onChange, existingRounds }) {
   if (custom) return (
     <div style={{display:"flex",gap:3}}>
       <input value={newRound} onChange={e=>setNewRound(e.target.value)} placeholder="New round name" onKeyDown={e=>{if(e.key==="Enter"&&newRound.trim()){onChange(newRound.trim());setCustom(false);setNewRound("");}}}
-        style={{padding:"6px 8px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:10,fontFamily:"'DM Sans',sans-serif",outline:"none",width:100}} />
-      <button onClick={()=>{if(newRound.trim()){onChange(newRound.trim());setCustom(false);setNewRound("");}}} style={{padding:"4px 8px",borderRadius:4,border:"1px solid var(--ac2)",background:"var(--ac)",color:"#fff",fontSize:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
-      <button onClick={()=>setCustom(false)} style={{padding:"4px 6px",borderRadius:4,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+        style={{padding:"6px 8px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:100}} />
+      <button onClick={()=>{if(newRound.trim()){onChange(newRound.trim());setCustom(false);setNewRound("");}}} style={{padding:"4px 8px",borderRadius:4,border:"1px solid var(--ac2)",background:"var(--ac)",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
+      <button onClick={()=>setCustom(false)} style={{padding:"4px 6px",borderRadius:4,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
     </div>
   );
   return (
     <select value={value} onChange={e=>{if(e.target.value==="__new__")setCustom(true);else onChange(e.target.value);}}
-      style={{padding:"6px 7px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:10,fontFamily:"'DM Sans',sans-serif"}}>
+      style={{padding:"6px 7px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>
       <option value="">No round</option>
       {existingRounds.map(r=><option key={r} value={r}>{r}</option>)}
       <option value="__new__">+ New round...</option>
@@ -266,7 +266,7 @@ function Card({children,style:s}) {
   return <div style={{background:"var(--s1)",border:"1px solid var(--bd)",borderRadius:7,padding:12,marginBottom:8,...s}}>{children}</div>;
 }
 function Inp(props) {
-  return <input {...props} style={{padding:"6px 9px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:11,fontFamily:"'DM Sans',sans-serif",outline:"none",...props.style}}/>;
+  return <input {...props} style={{padding:"6px 9px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",...props.style}}/>;
 }
 function ClassSelect({ value, onChange, classes, onNewClass }) {
   const [custom, setCustom] = useState(false);
@@ -274,14 +274,14 @@ function ClassSelect({ value, onChange, classes, onNewClass }) {
   if (custom) return (
     <div style={{display:"flex",gap:3}}>
       <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="New class name" onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){onNewClass(newName.trim());onChange(newName.trim());setCustom(false);setNewName("");}}}
-        style={{padding:"6px 8px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:10,fontFamily:"'DM Sans',sans-serif",outline:"none",width:130}} />
-      <button onClick={()=>{if(newName.trim()){onNewClass(newName.trim());onChange(newName.trim());setCustom(false);setNewName("");}}} style={{padding:"4px 8px",borderRadius:4,border:"1px solid var(--ac2)",background:"var(--ac)",color:"#fff",fontSize:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
-      <button onClick={()=>setCustom(false)} style={{padding:"4px 6px",borderRadius:4,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:9,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
+        style={{padding:"6px 8px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",width:130}} />
+      <button onClick={()=>{if(newName.trim()){onNewClass(newName.trim());onChange(newName.trim());setCustom(false);setNewName("");}}} style={{padding:"4px 8px",borderRadius:4,border:"1px solid var(--ac2)",background:"var(--ac)",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>OK</button>
+      <button onClick={()=>setCustom(false)} style={{padding:"4px 6px",borderRadius:4,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Cancel</button>
     </div>
   );
   return (
     <select value={value} onChange={e=>{if(e.target.value==="__new__")setCustom(true);else onChange(e.target.value);}}
-      style={{padding:"6px 7px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:10,fontFamily:"'DM Sans',sans-serif"}}>
+      style={{padding:"6px 7px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>
       {classes.map(c=><option key={c} value={c}>{c}</option>)}
       <option value="__new__">+ New class...</option>
     </select>
@@ -371,7 +371,11 @@ export default function TwoColumnApp() {
   /* Export to XLSX using SheetJS */
   const exportXlsx = async () => {
     if (!cap) return;
-    const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
+    if (!window.XLSX) {
+      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"; s.onload = r; s.onerror = () => { alert("Could not load spreadsheet library. Check your internet connection."); }; document.head.appendChild(s); });
+    }
+    if (!window.XLSX) return;
+    const XLSX = window.XLSX;
     const wb = XLSX.utils.book_new();
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
 
@@ -445,8 +449,13 @@ export default function TwoColumnApp() {
   /* Export to PDF using jsPDF */
   const exportPdf = async () => {
     if (!cap) return;
-    await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"; s.onload = r; document.head.appendChild(s); });
-    await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"; s.onload = r; document.head.appendChild(s); });
+    if (!window.jspdf) {
+      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"; s.onload = r; s.onerror = () => { alert("Could not load PDF library. Check your internet connection."); }; document.head.appendChild(s); });
+    }
+    if (!window.jspdf) return;
+    if (!window.jspdf.jsPDF.API.autoTable) {
+      await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"; s.onload = r; document.head.appendChild(s); });
+    }
     const { jsPDF } = window.jspdf;
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
@@ -621,18 +630,18 @@ export default function TwoColumnApp() {
   if (!authed) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0C0E13",fontFamily:"'DM Sans',sans-serif"}}>
       <div style={{textAlign:"center",maxWidth:320,padding:24}}>
-        <h1 style={{fontSize:24,color:"#E8EAF0",marginBottom:4}}>Winter<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Guard</span> Tote</h1>
-        <p style={{fontSize:11,color:"#6B7590",marginBottom:20}}>Score tote sheet for Winterguard Judges</p>
+        <h1 style={{fontSize:28,color:"#E8EAF0",marginBottom:4}}>Winter<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Guard</span> Tote</h1>
+        <p style={{fontSize:14,color:"#6B7590",marginBottom:20}}>Score tote sheet for Winterguard Judges</p>
         <input
           type="password"
           value={pwInput}
           onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
           onKeyDown={e=>e.key==="Enter"&&tryAuth()}
           placeholder="Enter access code"
-          style={{width:"100%",padding:"10px 14px",borderRadius:6,border:`2px solid ${pwError?"#EF4444":"#2A2F3D"}`,background:"#1B1F2A",color:"#E8EAF0",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",textAlign:"center",marginBottom:10}}
+          style={{width:"100%",padding:"10px 14px",borderRadius:6,border:`2px solid ${pwError?"#EF4444":"#2A2F3D"}`,background:"#1B1F2A",color:"#E8EAF0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",textAlign:"center",marginBottom:10}}
         />
-        {pwError && <p style={{fontSize:10,color:"#EF4444",marginBottom:8}}>Incorrect code. Try again.</p>}
-        <button onClick={tryAuth} style={{width:"100%",padding:"10px",borderRadius:6,border:"none",background:"#6C8AFF",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Enter</button>
+        {pwError && <p style={{fontSize:13,color:"#EF4444",marginBottom:8}}>Incorrect code. Try again.</p>}
+        <button onClick={tryAuth} style={{width:"100%",padding:"10px",borderRadius:6,border:"none",background:"#6C8AFF",color:"#fff",fontSize:16,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Enter</button>
       </div>
     </div>
   );
@@ -652,8 +661,8 @@ export default function TwoColumnApp() {
 *{margin:0;padding:0;box-sizing:border-box}body,#root{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}`;
 
-  const thS={textAlign:"left",padding:"4px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:9,textTransform:"uppercase",letterSpacing:".3px"};
-  const tdS={padding:"4px 5px",borderBottom:"1px solid var(--bd)",fontSize:11};
+  const thS={textAlign:"left",padding:"4px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:12,textTransform:"uppercase",letterSpacing:".3px"};
+  const tdS={padding:"4px 5px",borderBottom:"1px solid var(--bd)",fontSize:14};
 
   /* Factoring: RA/A classes have weighted EQ/MV sub-captions
      RA: Vocabulary x(60/100), Excellence x(140/100) — 60/140 split
@@ -685,7 +694,7 @@ export default function TwoColumnApp() {
     const fr = factors ? [...rows].sort((a,b)=>b.factored-a.factored).map(t=>t.id) : [];
     return (
       <div>
-        {factors && <div style={{fontSize:9,color:"var(--ac)",marginBottom:4,padding:"3px 6px",background:"rgba(108,138,255,.08)",borderRadius:3}}>
+        {factors && <div style={{fontSize:12,color:"var(--ac)",marginBottom:4,padding:"3px 6px",background:"rgba(108,138,255,.08)",borderRadius:3}}>
           Factored: {sub1Label} x({factors.label.split("/")[0]}/100) + {sub2Label} x({factors.label.split("/")[1]}/100)
         </div>}
         <table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>
@@ -698,25 +707,25 @@ export default function TwoColumnApp() {
           {sorted.map((t,i)=>(
             <tr key={t.id}>
               <td style={tdS}><div style={{textAlign:"center"}}>
-                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:9,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
-                <div style={{fontSize:8,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:12,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
+                <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(i+1)}</div>
               </div></td>
               <td style={{...tdS,fontWeight:500}}>{t.name}</td>
               <td style={{...tdS,textAlign:"center"}}>
                 <span style={{color:boxFor(t.s1).color,fontWeight:600}}>{t.s1}</span>
-                <div style={{fontSize:8,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
+                <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
               </td>
               <td style={{...tdS,textAlign:"center"}}>
                 <span style={{color:boxFor(t.s2).color,fontWeight:600}}>{t.s2}</span>
-                <div style={{fontSize:8,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
+                <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
               </td>
               <td style={{...tdS,textAlign:"right"}}>
-                <span style={{fontWeight:600,fontSize:11}}>{fmtTotal(t.tot)}</span>
-                <div style={{fontSize:8,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+                <span style={{fontWeight:600,fontSize:14}}>{fmtTotal(t.tot)}</span>
+                <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
               </td>
               {factors && <td style={{...tdS,textAlign:"right"}}>
-                <span style={{fontWeight:700,fontSize:12,color:"var(--ac)"}}>{t.factored.toFixed(2)}</span>
-                <div style={{fontSize:8,color:"var(--t3)"}}>{ordinal(fr.indexOf(t.id)+1)}</div>
+                <span style={{fontWeight:700,fontSize:15,color:"var(--ac)"}}>{t.factored.toFixed(2)}</span>
+                <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(fr.indexOf(t.id)+1)}</div>
               </td>}
             </tr>
           ))}
@@ -730,8 +739,8 @@ export default function TwoColumnApp() {
     <div style={{maxWidth:1200,margin:"0 auto",padding:"4px 8px"}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 6px",borderBottom:"1px solid var(--bd)",marginBottom:8,flexWrap:"wrap",gap:4}}>
         <div>
-          <h1 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20}}>Winter<span style={{color:"var(--ac)",fontStyle:"italic"}}>Guard</span> Tote</h1>
-          <p style={{fontSize:9,color:"var(--t3)"}}>
+          <h1 style={{fontFamily:"'DM Sans',sans-serif",fontSize:24}}>Winter<span style={{color:"var(--ac)",fontStyle:"italic"}}>Guard</span> Tote</h1>
+          <p style={{fontSize:12,color:"var(--t3)"}}>
             {cap?`${cap.label}`:""}
             {judgeName?` — ${judgeName}`:""}
             {eventVenue?` | ${eventVenue}`:""}
@@ -742,12 +751,12 @@ export default function TwoColumnApp() {
         <div style={{display:"flex",gap:3}}>
           <Btn sm onClick={()=>setConfirmAction({msg:"Clear all teams and scores? Caption, event info, and custom classes will be kept.",action:()=>{setTeams([]);setScores({});setNotes({});setActiveTote(null);setPreview(null);setSchedText("");setImportMsg("");setDebugInfo("");dirty();}})}>Clear Totes</Btn>
           <Btn sm danger onClick={()=>setConfirmAction({msg:"This erases EVERYTHING — teams, scores, notes, caption, event info, custom classes. Start completely fresh?",action:()=>{setTeams([]);setScores({});setNotes({});setActiveTote(null);setJudgeCap(null);setCustomClasses([]);setEventDate("");setEventVenue("");setJudgeName("");setPreview(null);setSchedText("");setImportMsg("");setDebugInfo("");setTab("settings");dirty();}})}>Reset</Btn>
-          <Btn sm onClick={()=>setShowHelp(true)} style={{background:"var(--s1)",fontSize:12,padding:"4px 8px"}}>?</Btn>
+          <Btn sm onClick={()=>setShowHelp(true)} style={{background:"var(--s1)",fontSize:15,padding:"4px 8px"}}>?</Btn>
         </div>
       </header>
 
       <div style={{display:"flex",gap:2,background:"var(--s1)",padding:2,borderRadius:5,marginBottom:8,overflowX:"auto",alignItems:"center"}}>
-        {["settings","teams","import"].map(k=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:4,fontSize:10,fontWeight:600,cursor:"pointer",color:tab===k?"#fff":"var(--t2)",background:tab===k?"var(--ac)":"transparent",border:"none",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif",textTransform:"capitalize",flexShrink:0}}>{k}</button>)}
+        {["settings","teams","import"].map(k=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:4,fontSize:13,fontWeight:600,cursor:"pointer",color:tab===k?"#fff":"var(--t2)",background:tab===k?"var(--ac)":"transparent",border:"none",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif",textTransform:"capitalize",flexShrink:0}}>{k}</button>)}
         {cap&&<div style={{width:1,height:16,background:"var(--bd)",flexShrink:0,margin:"0 2px"}}/>}
         {cap&&totes.map(t=><button key={t.key}
           draggable
@@ -757,7 +766,7 @@ export default function TwoColumnApp() {
           onDragEnd={()=>{setDragTote(null);setDragOverTote(null);}}
           onClick={()=>{setTab("score");setActiveTote(t.key)}}
           style={{
-            padding:"5px 7px",borderRadius:4,fontSize:9,fontWeight:600,cursor:"grab",
+            padding:"5px 7px",borderRadius:4,fontSize:12,fontWeight:600,cursor:"grab",
             color:tab==="score"&&activeTote===t.key?"#fff":"var(--t2)",
             background:tab==="score"&&activeTote===t.key?"var(--ac)":dragOverTote===t.key?"var(--s3)":"transparent",
             border:dragOverTote===t.key?"1px dashed var(--ac)":"1px solid transparent",
@@ -767,7 +776,7 @@ export default function TwoColumnApp() {
             transition:"opacity .15s, background .15s",
             flexShrink:0,
           }}>{toteTabLabel(t)}</button>)}
-        <button onClick={()=>setTab("summary")} style={{padding:"5px 11px",borderRadius:4,fontSize:10,fontWeight:600,cursor:"pointer",color:tab==="summary"?"#fff":"var(--t2)",background:tab==="summary"?"var(--ac)":"transparent",border:"none",fontFamily:"'DM Sans',sans-serif",marginLeft:"auto",flexShrink:0}}>Summary</button>
+        <button onClick={()=>setTab("summary")} style={{padding:"5px 11px",borderRadius:4,fontSize:13,fontWeight:600,cursor:"pointer",color:tab==="summary"?"#fff":"var(--t2)",background:tab==="summary"?"var(--ac)":"transparent",border:"none",fontFamily:"'DM Sans',sans-serif",marginLeft:"auto",flexShrink:0}}>Summary</button>
       </div>
 
       {/* SETTINGS */}
@@ -775,80 +784,80 @@ export default function TwoColumnApp() {
         <Card>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16}}>Theme</h2>
+              <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20}}>Theme</h2>
               <div style={{display:"flex",gap:0,borderRadius:5,overflow:"hidden",border:"1px solid var(--bd)"}}>
-                <button onClick={()=>{setTheme("light");dirty()}} style={{padding:"5px 14px",fontSize:10,fontWeight:600,cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",background:theme==="light"?"var(--ac)":"var(--s2)",color:theme==="light"?"#fff":"var(--t2)"}}>Light</button>
-                <button onClick={()=>{setTheme("dark");dirty()}} style={{padding:"5px 14px",fontSize:10,fontWeight:600,cursor:"pointer",border:"none",borderLeft:"1px solid var(--bd)",fontFamily:"'DM Sans',sans-serif",background:theme==="dark"?"var(--ac)":"var(--s2)",color:theme==="dark"?"#fff":"var(--t2)"}}>Dark</button>
+                <button onClick={()=>{setTheme("light");dirty()}} style={{padding:"5px 14px",fontSize:13,fontWeight:600,cursor:"pointer",border:"none",fontFamily:"'DM Sans',sans-serif",background:theme==="light"?"var(--ac)":"var(--s2)",color:theme==="light"?"#fff":"var(--t2)"}}>Light</button>
+                <button onClick={()=>{setTheme("dark");dirty()}} style={{padding:"5px 14px",fontSize:13,fontWeight:600,cursor:"pointer",border:"none",borderLeft:"1px solid var(--bd)",fontFamily:"'DM Sans',sans-serif",background:theme==="dark"?"var(--ac)":"var(--s2)",color:theme==="dark"?"#fff":"var(--t2)"}}>Dark</button>
               </div>
             </div>
             <Btn sm onClick={()=>{localStorage.removeItem("wg_layout");window.location.reload()}}>Switch Layout</Btn>
           </div>
         </Card>
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16,marginBottom:8}}>Event Info</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:8}}>Event Info</h2>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
             <div style={{flex:1,minWidth:120}}>
-              <label style={{fontSize:9,color:"var(--t3)",display:"block",marginBottom:2}}>Date</label>
+              <label style={{fontSize:12,color:"var(--t3)",display:"block",marginBottom:2}}>Date</label>
               <Inp type="date" value={eventDate} onChange={e=>{setEventDate(e.target.value);dirty()}} style={{width:"100%"}} />
             </div>
             <div style={{flex:2,minWidth:160}}>
-              <label style={{fontSize:9,color:"var(--t3)",display:"block",marginBottom:2}}>Venue / Event Name</label>
+              <label style={{fontSize:12,color:"var(--t3)",display:"block",marginBottom:2}}>Venue / Event Name</label>
               <Inp placeholder="e.g. PPA Championships @ Wenatchee HS" value={eventVenue} onChange={e=>{setEventVenue(e.target.value);dirty()}} style={{width:"100%"}} />
             </div>
           </div>
           <div>
-            <label style={{fontSize:9,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
+            <label style={{fontSize:12,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
             <Inp placeholder="Your name" value={judgeName} onChange={e=>{setJudgeName(e.target.value);dirty()}} style={{width:"100%",maxWidth:250}} />
           </div>
         </Card>
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16,marginBottom:8}}>Judge Caption</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:8}}>Judge Caption</h2>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             {CAPTIONS.map(c=><button key={c.key} onClick={()=>{setJudgeCap(c.key);dirty()}} style={{padding:"10px 8px",borderRadius:6,cursor:"pointer",textAlign:"left",background:judgeCap===c.key?`${c.clr}15`:"var(--s2)",border:`2px solid ${judgeCap===c.key?c.clr:"var(--bd)"}`,fontFamily:"'DM Sans',sans-serif",color:"var(--t1)"}}>
-              <div style={{fontSize:13,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:"var(--t1)"}}>{c.short}</div>
-              <div style={{fontSize:10,fontWeight:600,marginTop:1,color:"var(--t1)"}}>{c.label}</div>
-              <div style={{fontSize:9,color:"var(--t3)",marginTop:2}}>{c.sub1} + {c.sub2}</div>
+              <div style={{fontSize:16,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:"var(--t1)"}}>{c.short}</div>
+              <div style={{fontSize:13,fontWeight:600,marginTop:1,color:"var(--t1)"}}>{c.label}</div>
+              <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{c.sub1} + {c.sub2}</div>
             </button>)}
           </div>
         </Card>
         <Card>
-          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,marginBottom:6}}>Custom Classes</h3>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:17,marginBottom:6}}>Custom Classes</h3>
           <div style={{display:"flex",gap:4,marginBottom:5}}>
             <Inp placeholder="e.g. Cadet" value={newCls} onChange={e=>setNewCls(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){const n=newCls.trim();if(n&&!allClasses.includes(n)){setCustomClasses(p=>[...p,n]);setNewCls("");dirty()}}}} style={{flex:1}}/>
             <Btn onClick={()=>{const n=newCls.trim();if(n&&!allClasses.includes(n)){setCustomClasses(p=>[...p,n]);setNewCls("");dirty()}}}>+ Add</Btn>
           </div>
-          {customClasses.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{customClasses.map(c=><span key={c} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 7px",background:"var(--s2)",borderRadius:3,border:"1px solid var(--bd)",fontSize:10}}>{c}<button onClick={()=>{setCustomClasses(p=>p.filter(x=>x!==c));dirty()}} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:11}}>x</button></span>)}</div>}
+          {customClasses.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{customClasses.map(c=><span key={c} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 7px",background:"var(--s2)",borderRadius:3,border:"1px solid var(--bd)",fontSize:13}}>{c}<button onClick={()=>{setCustomClasses(p=>p.filter(x=>x!==c));dirty()}} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:14}}>x</button></span>)}</div>}
         </Card>
         <Card>
-          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,marginBottom:6}}>Backup & Restore</h3>
-          <p style={{fontSize:10,color:"var(--t2)",marginBottom:6}}>Download a backup file to protect your data. Restore from a backup if needed.</p>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:17,marginBottom:6}}>Backup & Restore</h3>
+          <p style={{fontSize:13,color:"var(--t2)",marginBottom:6}}>Download a backup file to protect your data. Restore from a backup if needed.</p>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
             <Btn onClick={downloadBackup}>Download Backup</Btn>
-            <label style={{display:"inline-flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:5,fontSize:11,fontWeight:600,cursor:"pointer",border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontFamily:"'DM Sans',sans-serif"}}>
+            <label style={{display:"inline-flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:5,fontSize:14,fontWeight:600,cursor:"pointer",border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontFamily:"'DM Sans',sans-serif"}}>
               Restore Backup
               <input type="file" accept=".json" onChange={restoreBackup} style={{display:"none"}} />
             </label>
             <Btn primary onClick={exportXlsx}>Export Spreadsheet</Btn>
             <Btn primary onClick={exportPdf}>Export PDF</Btn>
           </div>
-          {lastSaved&&<p style={{fontSize:9,color:"var(--t3)",marginTop:6}}>Last saved: {lastSaved.toLocaleString()}</p>}
+          {lastSaved&&<p style={{fontSize:12,color:"var(--t3)",marginTop:6}}>Last saved: {lastSaved.toLocaleString()}</p>}
         </Card>
         <Card>
-          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,marginBottom:4}}>WGI Scale</h3>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:17,marginBottom:4}}>WGI Scale</h3>
           {BOXES.map(b=><div key={b.id} style={{display:"flex",alignItems:"center",gap:5,padding:"3px 6px",background:b.bg,borderRadius:3,marginBottom:2,flexWrap:"wrap"}}>
-            <span style={{fontSize:9,fontWeight:700,color:b.color,minWidth:28}}>Box {b.id}</span>
-            <span style={{fontSize:9,minWidth:30}}>{b.lo}-{b.hi}</span>
-            <span style={{fontSize:9,color:"var(--t2)"}}>{b.label}</span>
-            <span style={{fontSize:8,color:"var(--t3)",marginLeft:"auto"}}>{b.thirds.filter(x=>x.t).map(x=>`${x.v}: ${x.t}`).join(" | ")}</span>
+            <span style={{fontSize:12,fontWeight:700,color:b.color,minWidth:28}}>Box {b.id}</span>
+            <span style={{fontSize:12,minWidth:30}}>{b.lo}-{b.hi}</span>
+            <span style={{fontSize:12,color:"var(--t2)"}}>{b.label}</span>
+            <span style={{fontSize:10,color:"var(--t3)",marginLeft:"auto"}}>{b.thirds.filter(x=>x.t).map(x=>`${x.v}: ${x.t}`).join(" | ")}</span>
           </div>)}
         </Card>
         <Card>
-          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,marginBottom:6}}>WGI Score Sheets & Resources</h3>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:17,marginBottom:6}}>WGI Score Sheets & Resources</h3>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            <a href="https://www.wgi.org/color-guard/cg-score-sheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Score Sheets by Caption & Class (wgi.org)</a>
-            <a href="https://www.wgi.org/wp-content/uploads/2025/09/2026_WGI_ColorGuard_Adj-Manual_-Rulebook_Sep25.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>2026 Adjudication Manual & Rulebook (PDF)</a>
-            <a href="https://www.wgi.org/scoresheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Official WGI Score Sheets Portal</a>
-            <a href="https://www.wgi.org/wp-content/uploads/2023/01/FAQ-CAPTIONS-AND-SCORING.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>FAQ: Captions & Scoring (PDF)</a>
+            <a href="https://www.wgi.org/color-guard/cg-score-sheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:14,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Score Sheets by Caption & Class (wgi.org)</a>
+            <a href="https://www.wgi.org/wp-content/uploads/2025/09/2026_WGI_ColorGuard_Adj-Manual_-Rulebook_Sep25.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:14,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>2026 Adjudication Manual & Rulebook (PDF)</a>
+            <a href="https://www.wgi.org/scoresheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:14,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Official WGI Score Sheets Portal</a>
+            <a href="https://www.wgi.org/wp-content/uploads/2023/01/FAQ-CAPTIONS-AND-SCORING.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:14,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>FAQ: Captions & Scoring (PDF)</a>
           </div>
         </Card>
       </div>}
@@ -856,7 +865,7 @@ export default function TwoColumnApp() {
       {/* TEAMS */}
       {tab==="teams"&&<div style={{animation:"fadeIn .2s"}}>
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,marginBottom:6}}>Add Team</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,marginBottom:6}}>Add Team</h2>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"flex-start"}}>
             <Inp placeholder="Team name" value={tName} onChange={e=>setTName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTeam()} style={{flex:1,minWidth:100}}/>
             <ClassSelect value={selClass} onChange={setSelClass} classes={allClasses} onNewClass={n=>{if(!allClasses.includes(n)){setCustomClasses(p=>[...p,n]);dirty();}}} />
@@ -868,15 +877,15 @@ export default function TwoColumnApp() {
         {totes.map(tote=><Card key={tote.key}>
           <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
             <span style={{width:6,height:6,borderRadius:"50%",background:colorFor(tote.className)}}/>
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:13}}>{tote.className}</h3>
-            {tote.round&&<span style={{fontSize:9,color:"var(--ac)",fontWeight:600}}>{tote.round}</span>}
-            <span style={{fontSize:9,color:"var(--t3)"}}>({toteTeams(tote.key).length})</span>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16}}>{tote.className}</h3>
+            {tote.round&&<span style={{fontSize:12,color:"var(--ac)",fontWeight:600}}>{tote.round}</span>}
+            <span style={{fontSize:12,color:"var(--t3)"}}>({toteTeams(tote.key).length})</span>
           </div>
           {toteTeams(tote.key).map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 7px",background:"var(--s2)",borderRadius:3,border:"1px solid var(--bd)",marginBottom:2}}>
-            <span style={{fontSize:9,color:"var(--t3)",minWidth:14}}>{t.order}</span>
-            <input value={t.name} onChange={e=>renameTeam(t.id,e.target.value)} style={{flex:1,fontSize:10,fontWeight:500,padding:"2px 4px",borderRadius:3,border:"1px solid transparent",background:"transparent",color:"var(--t1)",fontFamily:"'DM Sans',sans-serif",outline:"none"}} onFocus={e=>{e.target.style.borderColor="var(--bd)";e.target.style.background="var(--s1)"}} onBlur={e=>{e.target.style.borderColor="transparent";e.target.style.background="transparent"}} />
-            {t.time&&<span style={{fontSize:8,color:"var(--t3)"}}>{t.time}</span>}
-            <button onClick={()=>removeTeam(t.id)} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:12}}>x</button>
+            <span style={{fontSize:12,color:"var(--t3)",minWidth:14}}>{t.order}</span>
+            <input value={t.name} onChange={e=>renameTeam(t.id,e.target.value)} style={{flex:1,fontSize:13,fontWeight:500,padding:"2px 4px",borderRadius:3,border:"1px solid transparent",background:"transparent",color:"var(--t1)",fontFamily:"'DM Sans',sans-serif",outline:"none"}} onFocus={e=>{e.target.style.borderColor="var(--bd)";e.target.style.background="var(--s1)"}} onBlur={e=>{e.target.style.borderColor="transparent";e.target.style.background="transparent"}} />
+            {t.time&&<span style={{fontSize:10,color:"var(--t3)"}}>{t.time}</span>}
+            <button onClick={()=>removeTeam(t.id)} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:15}}>x</button>
           </div>)}
         </Card>)}
       </div>}
@@ -884,13 +893,13 @@ export default function TwoColumnApp() {
       {/* IMPORT */}
       {tab==="import"&&<div style={{animation:"fadeIn .2s"}}>
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,marginBottom:6}}>Import Schedule</h2>
-          <div style={{fontSize:10,color:"var(--t2)",lineHeight:1.5,marginBottom:8,background:"var(--s2)",padding:8,borderRadius:5}}>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,marginBottom:6}}>Import Schedule</h2>
+          <div style={{fontSize:13,color:"var(--t2)",lineHeight:1.5,marginBottom:8,background:"var(--s2)",padding:8,borderRadius:5}}>
             Open schedule link in browser. <b>Ctrl+A</b> then <b>Ctrl+C</b>. Click below. <b>Ctrl+V</b>.
           </div>
           <textarea value={schedText} onChange={e=>setSchedText(e.target.value)} onPaste={handlePaste}
             placeholder="Click here and Ctrl+V to paste schedule..."
-            style={{width:"100%",minHeight:200,padding:12,borderRadius:6,border:"2px dashed var(--ac)",background:"var(--bg)",color:"var(--t1)",fontSize:11,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.4,marginBottom:6}} />
+            style={{width:"100%",minHeight:200,padding:12,borderRadius:6,border:"2px dashed var(--ac)",background:"var(--bg)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.4,marginBottom:6}} />
           <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap",marginBottom:4}}>
             <Btn primary onClick={()=>doParse(schedText)}>Parse Schedule</Btn>
             <Btn onClick={()=>{
@@ -899,23 +908,23 @@ export default function TwoColumnApp() {
               setTeams(d);setScores(ns);dirty();setImportMsg("Loaded demo.");setPreview(null);setDebugInfo("");
             }}>Demo</Btn>
           </div>
-          {importMsg&&<div style={{fontSize:10,padding:"4px 8px",background:"var(--s2)",borderRadius:4,marginBottom:4,color:importMsg.includes("Imported")||importMsg.includes("Loaded")?"var(--ok)":"var(--warn)"}}>{importMsg}</div>}
-          {debugInfo&&<details style={{marginBottom:6}}><summary style={{fontSize:10,color:"var(--t3)",cursor:"pointer"}}>Debug info</summary>
-            <pre style={{fontSize:8,color:"var(--t3)",background:"var(--s2)",padding:6,borderRadius:4,overflow:"auto",whiteSpace:"pre-wrap",maxHeight:200,border:"1px solid var(--bd)",fontFamily:"monospace"}}>{debugInfo}</pre>
+          {importMsg&&<div style={{fontSize:13,padding:"4px 8px",background:"var(--s2)",borderRadius:4,marginBottom:4,color:importMsg.includes("Imported")||importMsg.includes("Loaded")?"var(--ok)":"var(--warn)"}}>{importMsg}</div>}
+          {debugInfo&&<details style={{marginBottom:6}}><summary style={{fontSize:13,color:"var(--t3)",cursor:"pointer"}}>Debug info</summary>
+            <pre style={{fontSize:10,color:"var(--t3)",background:"var(--s2)",padding:6,borderRadius:4,overflow:"auto",whiteSpace:"pre-wrap",maxHeight:200,border:"1px solid var(--bd)",fontFamily:"monospace"}}>{debugInfo}</pre>
           </details>}
         </Card>
         {preview&&preview.length>0&&<Card style={{border:"2px solid var(--ok)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-            <h3 style={{fontSize:13,color:"var(--ok)",fontWeight:700}}>Found {preview.length} teams</h3>
+            <h3 style={{fontSize:16,color:"var(--ok)",fontWeight:700}}>Found {preview.length} teams</h3>
             <Btn primary onClick={()=>confirmImport(preview)}>Confirm Import</Btn>
           </div>
           <div style={{maxHeight:250,overflowY:"auto"}}>
-            {preview.map((t,i)=><div key={i} style={{display:"flex",gap:6,padding:"3px 4px",fontSize:10,borderBottom:"1px solid var(--bd)"}}>
+            {preview.map((t,i)=><div key={i} style={{display:"flex",gap:6,padding:"3px 4px",fontSize:13,borderBottom:"1px solid var(--bd)"}}>
               <span style={{color:"var(--t3)",minWidth:18}}>{t.order}</span>
               <span style={{fontWeight:500,flex:1}}>{t.name}</span>
-              <span style={{color:colorFor(t.className),fontWeight:600,fontSize:9}}>{SHORT(t.className)}</span>
-              {t.round&&<span style={{color:"var(--ac)",fontSize:9}}>{t.round}</span>}
-              <span style={{color:"var(--t3)",fontSize:9}}>{t.time}</span>
+              <span style={{color:colorFor(t.className),fontWeight:600,fontSize:12}}>{SHORT(t.className)}</span>
+              {t.round&&<span style={{color:"var(--ac)",fontSize:12}}>{t.round}</span>}
+              <span style={{color:"var(--t3)",fontSize:12}}>{t.time}</span>
             </div>)}
           </div>
         </Card>}
@@ -925,14 +934,14 @@ export default function TwoColumnApp() {
       {tab==="score"&&cap&&curTote&&<div style={{animation:"fadeIn .2s"}}>
         <Card style={{paddingBottom:5}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:3}}>
-            <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,display:"flex",alignItems:"center",gap:4}}>
+            <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,display:"flex",alignItems:"center",gap:4}}>
               <span style={{width:8,height:8,borderRadius:"50%",background:colorFor(curTote.className)}}/>{curTote.className}
-              {curTote.round&&<span style={{fontSize:11,color:"var(--ac)"}}> - {curTote.round}</span>}
+              {curTote.round&&<span style={{fontSize:14,color:"var(--ac)"}}> - {curTote.round}</span>}
             </h2>
-            <span style={{fontSize:9,color:"var(--t3)"}}>{cap.label} | {curTeams.length} teams</span>
+            <span style={{fontSize:12,color:"var(--t3)"}}>{cap.label} | {curTeams.length} teams</span>
           </div>
         </Card>
-        {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:10}}>No teams.</p>:<div>
+        {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:13}}>No teams.</p>:<div>
           <div style={{display:"flex",flexDirection:"row",gap:6,marginBottom:8}}>
             <Scale title={cap.sub1} subtitle="Sub 1" teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
             <Scale title={cap.sub2} subtitle="Sub 2" teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
@@ -940,31 +949,31 @@ export default function TwoColumnApp() {
           <div style={{display:"flex",flexDirection:"row",gap:6}}>
             <div style={{flex:1,minWidth:0}}>
               <Card>
-                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,marginBottom:4}}>Ranking</h3>
+                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,marginBottom:4}}>Ranking</h3>
                 <ScoreTable teamList={curTeams} capKey={judgeCap} sub1Label={cap.sub1} sub2Label={cap.sub2} className={curTote.className} />
               </Card>
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{background:"var(--s1)",border:"1px solid var(--bd)",borderRadius:7,padding:10}}>
-                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,marginBottom:4}}>Notes</h3>
+                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,marginBottom:4}}>Notes</h3>
                 <table style={{width:"100%",borderCollapse:"collapse"}}>
                   <thead>
                     <tr>
-                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:8,textTransform:"uppercase",width:100}}>Team</th>
-                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:8,textTransform:"uppercase"}}>Comments</th>
+                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:10,textTransform:"uppercase",width:100}}>Team</th>
+                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:10,textTransform:"uppercase"}}>Comments</th>
                     </tr>
                   </thead>
                   <tbody>
                     {curTeams.map(t=>(
                       <tr key={t.id}>
-                        <td style={{padding:"2px 5px",borderBottom:"1px solid var(--bd)",fontSize:9,fontWeight:500,verticalAlign:"top",whiteSpace:"nowrap"}}>{t.name}</td>
+                        <td style={{padding:"2px 5px",borderBottom:"1px solid var(--bd)",fontSize:12,fontWeight:500,verticalAlign:"top",whiteSpace:"nowrap"}}>{t.name}</td>
                         <td style={{padding:"2px 3px",borderBottom:"1px solid var(--bd)"}}>
                           <textarea
                             value={notes[t.id]||""}
                             onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);}}
                             placeholder="..."
                             rows={1}
-                            style={{width:"100%",padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:9,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.3,minHeight:22}}
+                            style={{width:"100%",padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.3,minHeight:22}}
                           />
                         </td>
                       </tr>
@@ -976,7 +985,7 @@ export default function TwoColumnApp() {
           </div>
         </div>}
       </div>}
-      {tab==="score"&&!cap&&<p style={{textAlign:"center",padding:30,color:"var(--t3)",fontSize:11}}>Select caption in Settings.</p>}
+      {tab==="score"&&!cap&&<p style={{textAlign:"center",padding:30,color:"var(--t3)",fontSize:14}}>Select caption in Settings.</p>}
 
       {/* SUMMARY */}
       {tab==="summary"&&<div style={{animation:"fadeIn .2s"}}>
@@ -984,9 +993,9 @@ export default function TwoColumnApp() {
           {totes.map(tote=><Card key={tote.key}>
             <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:6}}>
               <span style={{width:7,height:7,borderRadius:"50%",background:colorFor(tote.className)}}/>
-              <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{tote.className}</h2>
-              {tote.round&&<span style={{fontSize:9,color:"var(--ac)",fontWeight:600}}>{tote.round}</span>}
-              <span style={{fontSize:9,color:"var(--t3)",marginLeft:"auto"}}>{cap.label}</span>
+              <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:17}}>{tote.className}</h2>
+              {tote.round&&<span style={{fontSize:12,color:"var(--ac)",fontWeight:600}}>{tote.round}</span>}
+              <span style={{fontSize:12,color:"var(--t3)",marginLeft:"auto"}}>{cap.label}</span>
             </div>
             <ScoreTable teamList={toteTeams(tote.key)} capKey={judgeCap} sub1Label={cap.sub1} sub2Label={cap.sub2} className={tote.className} />
           </Card>)}
@@ -1000,7 +1009,7 @@ export default function TwoColumnApp() {
     {confirmAction && (
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,backdropFilter:"blur(4px)"}} onClick={()=>setConfirmAction(null)}>
         <div onClick={e=>e.stopPropagation()} style={{background:"var(--s1)",border:"1px solid var(--bd)",borderRadius:10,padding:20,width:"90%",maxWidth:360,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
-          <p style={{fontSize:12,lineHeight:1.5,marginBottom:16,color:"var(--t1)"}}>{confirmAction.msg}</p>
+          <p style={{fontSize:15,lineHeight:1.5,marginBottom:16,color:"var(--t1)"}}>{confirmAction.msg}</p>
           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
             <Btn onClick={()=>setConfirmAction(null)}>Cancel</Btn>
             <Btn danger onClick={()=>{confirmAction.action();setConfirmAction(null);}}>Yes, do it</Btn>
@@ -1013,36 +1022,37 @@ export default function TwoColumnApp() {
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,backdropFilter:"blur(4px)"}} onClick={()=>setShowHelp(false)}>
         <div onClick={e=>e.stopPropagation()} style={{background:"var(--s1)",border:"1px solid var(--bd)",borderRadius:10,padding:20,width:"92%",maxWidth:520,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20}}>User Guide</h2>
-            <button onClick={()=>setShowHelp(false)} style={{background:"none",border:"none",color:"var(--t2)",fontSize:18,cursor:"pointer"}}>x</button>
+            <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:24}}>User Guide</h2>
+            <button onClick={()=>setShowHelp(false)} style={{background:"none",border:"none",color:"var(--t2)",fontSize:22,cursor:"pointer"}}>x</button>
           </div>
 
-          <div style={{fontSize:11,color:"var(--t2)",lineHeight:1.6}}>
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:12}}>Getting Started</h3>
-            <p>WinterGuard Tote is a digital score tote sheet for WGI winterguard judges. Start in <b>Settings</b> to configure your theme, event info, and judge caption, then import a schedule or add teams manually.</p>
+          <div style={{fontSize:14,color:"var(--t2)",lineHeight:1.6}}>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:12}}>Getting Started</h3>
+            <p>WinterGuard Tote is a digital score tote sheet for winterguard judges. When you first open the app, enter the access code to get in, then choose your preferred layout (2 Column or 3 Column). Go to <b>Settings</b> to configure your theme, event info, and judge caption, then import a schedule or add teams manually.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Settings</h3>
-            <p><b>Theme</b> — Toggle between Light and Dark mode. Your preference is saved.</p>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Settings</h3>
+            <p><b>Theme & Layout</b> — Toggle between Light and Dark mode. Use the <b>Switch Layout</b> button to go back to the 2 Column / 3 Column picker. Your preferences are saved.</p>
             <p style={{marginTop:4}}><b>Event Info</b> — Enter the date, venue/event name, and your name. These display in the header and are included in exports and backups.</p>
             <p style={{marginTop:4}}><b>Judge Caption</b> — Select which caption you are judging: Equipment (EQ), Movement (MV), Design Analysis (DA), or General Effect (GE). Each has its own sub-captions (e.g., Vocabulary + Excellence for EQ/MV). You must select a caption before tote tabs and scoring become available.</p>
             <p style={{marginTop:4}}><b>Custom Classes</b> — Add non-standard class names your circuit uses (Cadet, Scholastic AA, etc.). These appear in the class dropdown when adding teams.</p>
-            <p style={{marginTop:4}}><b>Backup & Restore</b> — Download a JSON backup of all your data (teams, scores, notes, settings) for safekeeping. Restore from a backup file if needed. You can also export your scores to a spreadsheet (.xlsx) or PDF from here.</p>
+            <p style={{marginTop:4}}><b>Backup & Restore</b> — Download a JSON backup of all your data (teams, scores, notes, settings) for safekeeping. Restore from a backup file if needed. You can also export your scores to a <b>spreadsheet (.xlsx)</b> or <b>PDF</b> from here.</p>
             <p style={{marginTop:4}}><b>WGI Scale Reference</b> — Shows the 5-box scoring system with numerical ranges and achievement levels.</p>
+            <p style={{marginTop:4}}><b>WGI Score Sheets & Resources</b> — Quick links to official WGI score sheets, the adjudication manual, and scoring FAQ. These open in a new tab for reference while judging.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Importing a Schedule</h3>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Importing a Schedule</h3>
             <p>Go to the <b>Import</b> tab. Open your CompetitionSuite schedule in a browser, press <b>Ctrl+A</b> (select all), then <b>Ctrl+C</b> (copy). Come back here, tap in the paste area, and press <b>Ctrl+V</b>. The parser detects teams, classes, rounds, and times automatically.</p>
             <p style={{marginTop:4}}>A preview shows all detected teams organized by class and round. Review the list, then tap <b>Confirm Import</b>. You must have a caption selected before importing. Each class+round combination becomes its own tote tab.</p>
             <p style={{marginTop:4}}>Percussion entries are automatically filtered out. Exhibitions are skipped. City names are stripped from team names.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Teams</h3>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Teams</h3>
             <p>The <b>Teams</b> tab shows all imported teams grouped by tote. You can <b>edit team names</b> by tapping on them directly. Add teams manually using the form at the top — the class dropdown includes <b>+ New class</b> and the round dropdown includes <b>+ New round</b>.</p>
             <p style={{marginTop:4}}>Tap the <b>x</b> next to any team to remove it.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Tote Tabs</h3>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Tote Tabs</h3>
             <p>After importing, tote tabs appear in the tab bar with short labels like <b>SW-1</b>, <b>IO-4</b>, <b>IW-2</b> (class abbreviation + round number). They are automatically sorted by performance time from the schedule.</p>
             <p style={{marginTop:4}}>You can <b>drag tabs</b> left and right to reorder them. Your custom order is saved.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Scoring</h3>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Scoring</h3>
             <p>Each tote has two side-by-side scoring scales at the top, with the ranking table and notes side by side below:</p>
             <p style={{marginTop:4}}><b>Left scale</b> — Sub-caption 1 (Vocabulary, Composition, or Repertoire depending on your caption).</p>
             <p><b>Right scale</b> — Sub-caption 2 (Excellence or Performance).</p>
@@ -1052,10 +1062,13 @@ export default function TwoColumnApp() {
             <p style={{marginTop:4}}><b>Drag team chips</b> up and down to set scores. Scores are whole numbers 0-100. Chips automatically spread apart so they never overlap.</p>
             <p style={{marginTop:4}}>Totals display as XX.X (divided by 10). For <b>Regional A</b> and <b>A Class</b> on EQ/MV captions, a factored score appears using the WGI weighting (RA: 60/140, A: 70/130).</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Summary & Export</h3>
-            <p>The <b>Summary</b> tab shows ranked results for every tote with ordinals for each sub-caption and total. Use the export buttons to download your scores as a <b>spreadsheet (.xlsx)</b> or <b>PDF</b>. Each tote becomes a separate sheet/page with performance order, notes, and a ranked summary below.</p>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Summary & Export</h3>
+            <p>The <b>Summary</b> tab shows ranked results for every tote with ordinals for each sub-caption and total. Use the export buttons to download your scores as a <b>spreadsheet (.xlsx)</b> or <b>PDF</b>. Each tote becomes a separate sheet/page with performance order, notes, and a ranked summary below. Export buttons are also available in Settings under Backup & Restore.</p>
 
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,color:"var(--t1)",marginBottom:4,marginTop:14}}>Saving & Data</h3>
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Offline Use</h3>
+            <p>After visiting the app once with internet, it works fully offline. All data is stored on your device. On iPad, tap the Share button in Safari → <b>Add to Home Screen</b> to install it as an app with its own icon.</p>
+
+            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:18,color:"var(--t1)",marginBottom:4,marginTop:14}}>Saving & Data</h3>
             <p>All data saves automatically to your device every few seconds. The header shows when data was last saved. Each judge's data is completely independent — multiple judges can use the app simultaneously on their own devices without any conflicts.</p>
             <p style={{marginTop:4}}><b>Clear Totes</b> removes teams, scores, and notes but keeps your caption, event info, and custom classes. <b>Reset</b> erases everything and returns to a fresh start.</p>
             <p style={{marginTop:4}}>Use <b>Download Backup</b> in Settings before a competition for extra protection. Your backup file can be restored on any device.</p>
