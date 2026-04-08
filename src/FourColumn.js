@@ -953,7 +953,6 @@ export default function FourColumnApp() {
             <div style={{minWidth:0,flex:"0 0 auto",width:Math.max(160, Math.min(260, curTeams.length > 6 ? 180 : 220)),display:"flex",flexDirection:"column"}}>
               <div style={{textAlign:"center",marginBottom:2}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>Ranking</div>
-                <div style={{fontSize:11,color:"var(--t3)"}}>by total</div>
               </div>
               <div style={{background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",padding:6,flex:1,overflowY:"auto",maxHeight:trackH}}>
                 {(()=>{
@@ -1006,7 +1005,6 @@ export default function FourColumnApp() {
             <div style={{minWidth:0,flex:"1.2",display:"flex",flexDirection:"column"}}>
               <div style={{textAlign:"center",marginBottom:2}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>Notes</div>
-                <div style={{fontSize:11,color:"var(--t3)"}}>per team</div>
               </div>
               <div style={{background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",padding:6,flex:1,overflowY:"auto",maxHeight:trackH}}>
                 {curTeams.map(t=>(
