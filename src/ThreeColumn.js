@@ -312,6 +312,7 @@ export default function ThreeColumnApp() {
   const [lastSaved, setLastSaved] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [lockedTotes, setLockedTotes] = useState({});
   const [eventDate, setEventDate] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [judgeName, setJudgeName] = useState("");
@@ -328,6 +329,7 @@ export default function ThreeColumnApp() {
     setEventVenue(await Store.load("eventVenue",""));
     setJudgeName(await Store.load("judgeName",""));
     setTheme(await Store.load("theme","dark"));
+    setLockedTotes(await Store.load("lockedTotes",{}));
     setReady(true);
   })(); }, []);
 
@@ -337,8 +339,9 @@ export default function ThreeColumnApp() {
     await Store.save("notes",notes); await Store.save("eventDate",eventDate);
     await Store.save("eventVenue",eventVenue); await Store.save("judgeName",judgeName);
     await Store.save("theme",theme);
+    await Store.save("lockedTotes",lockedTotes);
     setSaved(true); setLastSaved(new Date());
-  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,notes,eventDate,eventVenue,judgeName,theme,ready]);
+  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,notes,eventDate,eventVenue,judgeName,theme,lockedTotes,ready]);
 
   /* Download full backup as JSON file */
   const downloadBackup = () => {
@@ -455,7 +458,8 @@ export default function ThreeColumnApp() {
       ];
 
       // Sheet name (max 31 chars for Excel)
-      const sheetName = (tote.round ? `${tote.round} ${SHORT(tote.className)}` : SHORT(tote.className)).substring(0, 31);
+      const rawName = tote.round ? (tote.round+" "+SHORT(tote.className)) : SHORT(tote.className);
+      const sheetName = rawName.replace(/[:\\/?\*\[\]]/g,"-").substring(0,31);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     }
 
@@ -932,13 +936,20 @@ export default function ThreeColumnApp() {
               <span style={{width:8,height:8,borderRadius:"50%",background:colorFor(curTote.className)}}/>{curTote.className}
               {curTote.round&&<span style={{fontSize:15,color:"var(--ac)"}}> - {curTote.round}</span>}
             </h2>
+            <button onClick={()=>{setLockedTotes(p=>{const n={...p};if(n[activeTote])delete n[activeTote];else n[activeTote]=true;return n;});dirty();}} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${lockedTotes[activeTote]?"var(--dng)":"var(--bd)"}`,background:lockedTotes[activeTote]?"var(--dng)":"var(--s2)",color:lockedTotes[activeTote]?"#fff":"var(--t2)",cursor:"pointer",fontSize:16,lineHeight:1,display:"inline-flex",alignItems:"center",gap:4}}>
+              {lockedTotes[activeTote]?"\u{1F512}":"\u{1F513}"}
+            </button>
             <span style={{fontSize:13,color:"var(--t3)"}}>{cap.label} | {curTeams.length} teams</span>
           </div>
         </Card>
         {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:14}}>No teams.</p>:<div>
           <div style={{display:"flex",flexDirection:"row",gap:6}}>
-            <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
-            <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            <div style={{flex:1,minWidth:0,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
+              <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
+            </div>
+            <div style={{flex:1,minWidth:0,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
+              <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            </div>
             {/* Ranking column */}
             <div style={{minWidth:0,flex:"0 0 auto",width:Math.max(160, Math.min(260, curTeams.length > 6 ? 180 : 220)),display:"flex",flexDirection:"column"}}>
               <div style={{textAlign:"center",marginBottom:2}}>
@@ -1010,8 +1021,9 @@ export default function ThreeColumnApp() {
                     <td style={{padding:"2px 4px",borderBottom:"1px solid var(--bd)"}}>
                       <textarea
                         value={notes[t.id]||""}
-                        onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                        onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
                         onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                        readOnly={!!lockedTotes[activeTote]}
                         placeholder="..."
                         rows={1}
                         style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:24,overflow:"hidden"}}

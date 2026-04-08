@@ -310,6 +310,7 @@ export default function TwoColumnApp() {
   const [lastSaved, setLastSaved] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [lockedTotes, setLockedTotes] = useState({});
   const [eventDate, setEventDate] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [judgeName, setJudgeName] = useState("");
@@ -327,6 +328,7 @@ export default function TwoColumnApp() {
     setJudgeName(await Store.load("judgeName",""));
     setNotes(await Store.load("notes",{}));
     setTheme(await Store.load("theme","dark"));
+    setLockedTotes(await Store.load("lockedTotes",{}));
     setReady(true);
   })(); }, []);
 
@@ -336,8 +338,9 @@ export default function TwoColumnApp() {
     await Store.save("eventDate",eventDate); await Store.save("eventVenue",eventVenue);
     await Store.save("judgeName",judgeName); await Store.save("notes",notes);
     await Store.save("theme",theme);
+    await Store.save("lockedTotes",lockedTotes);
     setSaved(true); setLastSaved(new Date());
-  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,eventDate,eventVenue,judgeName,notes,theme,ready]);
+  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,eventDate,eventVenue,judgeName,notes,theme,lockedTotes,ready]);
 
   const downloadBackup = () => {
     const data = { teams, scores, notes, judgeCap, customClasses, eventDate, eventVenue, judgeName, exportedAt: new Date().toISOString() };
@@ -425,7 +428,8 @@ export default function TwoColumnApp() {
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
       ws["!cols"] = [{ wch: 5 }, { wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, ...(factors ? [{ wch: 10 }] : []), { wch: 40 }];
 
-      const sheetName = (tote.round ? `${tote.round} ${SHORT(tote.className)}` : SHORT(tote.className)).substring(0, 31);
+      const rawName = tote.round ? (tote.round+" "+SHORT(tote.className)) : SHORT(tote.className);
+      const sheetName = rawName.replace(/[:\\/?\*\[\]]/g,"-").substring(0,31);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     }
 
@@ -901,11 +905,14 @@ export default function TwoColumnApp() {
               <span style={{width:8,height:8,borderRadius:"50%",background:colorFor(curTote.className)}}/>{curTote.className}
               {curTote.round&&<span style={{fontSize:15,color:"var(--ac)"}}> - {curTote.round}</span>}
             </h2>
+            <button onClick={()=>{setLockedTotes(p=>{const n={...p};if(n[activeTote])delete n[activeTote];else n[activeTote]=true;return n;});dirty();}} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${lockedTotes[activeTote]?"var(--dng)":"var(--bd)"}`,background:lockedTotes[activeTote]?"var(--dng)":"var(--s2)",color:lockedTotes[activeTote]?"#fff":"var(--t2)",cursor:"pointer",fontSize:16,lineHeight:1,display:"inline-flex",alignItems:"center",gap:4}}>
+              {lockedTotes[activeTote]?"\u{1F512}":"\u{1F513}"}
+            </button>
             <span style={{fontSize:13,color:"var(--t3)"}}>{cap.label} | {curTeams.length} teams</span>
           </div>
         </Card>
         {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:14}}>No teams.</p>:<div>
-          <div style={{display:"flex",flexDirection:"row",gap:6,marginBottom:8}}>
+          <div style={{display:"flex",flexDirection:"row",gap:6,marginBottom:8,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
             <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
             <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
           </div>
@@ -933,8 +940,9 @@ export default function TwoColumnApp() {
                         <td style={{padding:"2px 3px",borderBottom:"1px solid var(--bd)"}}>
                           <textarea
                             value={notes[t.id]||""}
-                            onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                            onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
                             onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                            readOnly={!!lockedTotes[activeTote]}
                             placeholder="..."
                             rows={1}
                             style={{width:"100%",padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:22,overflow:"hidden"}}
