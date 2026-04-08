@@ -946,8 +946,12 @@ export default function FourColumnApp() {
         </Card>
         {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:14}}>No teams.</p>:<div>
           <div style={{display:"flex",flexDirection:"row",gap:6}}>
-            <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
-            <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            <div style={{flex:"0.7",minWidth:0}}>
+              <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
+            </div>
+            <div style={{flex:"0.7",minWidth:0}}>
+              <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            </div>
             {/* Ranking column */}
             <div style={{minWidth:0,flex:"0 0 auto",width:Math.max(160, Math.min(260, curTeams.length > 6 ? 180 : 220)),display:"flex",flexDirection:"column"}}>
               <div style={{textAlign:"center",marginBottom:2}}>
@@ -1002,7 +1006,7 @@ export default function FourColumnApp() {
               </div>
             </div>
             {/* Notes column */}
-            <div style={{minWidth:0,flex:"0 0 auto",width:Math.max(180, Math.min(300, 240)),display:"flex",flexDirection:"column"}}>
+            <div style={{minWidth:0,flex:"1.2",display:"flex",flexDirection:"column"}}>
               <div style={{textAlign:"center",marginBottom:2}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>Notes</div>
                 <div style={{fontSize:11,color:"var(--t3)"}}>per team</div>
@@ -1016,7 +1020,7 @@ export default function FourColumnApp() {
                       onChange={e=>{setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);}}
                       placeholder="..."
                       rows={2}
-                      style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.3,minHeight:36}}
+                      style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"vertical",lineHeight:1.4,minHeight:40,maxWidth:"100%",boxSizing:"border-box"}}
                     />
                   </div>
                 ))}
