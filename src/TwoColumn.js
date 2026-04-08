@@ -191,7 +191,7 @@ function layoutChips(teams, scores, tH, cH) {
 }
 
 /* ═══ Scale ═══ */
-function Scale({ title, subtitle, teams, scores, onScore, trackH }) {
+function Scale({ title, teams, scores, onScore, trackH }) {
   const ref = useRef(null);
   const [dr, setDr] = useState(null);
   const off = useRef(0);
@@ -211,22 +211,21 @@ function Scale({ title, subtitle, teams, scores, onScore, trackH }) {
     <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>
       <div style={{textAlign:"center",marginBottom:2}}>
         <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>{title}</div>
-        {subtitle&&<div style={{fontSize:11,color:"var(--t3)"}}>{subtitle}</div>}
       </div>
       <div ref={ref} style={{position:"relative",height:trackH,background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",overflow:"hidden"}}>
         {BOXES.map(box=>(
           <div key={box.id} style={{position:"absolute",left:0,right:0,bottom:`${box.lo}%`,height:`${box.hi-box.lo+1}%`,background:box.bg,pointerEvents:"none"}}>
-            <div style={{position:"absolute",right:1,top:"50%",transform:"translateY(-50%) rotate(180deg)",writingMode:"vertical-rl",fontSize:10,color:box.color,opacity:.5,fontWeight:700,whiteSpace:"nowrap"}}>{box.label}</div>
+            <div style={{position:"absolute",right:2,top:"50%",transform:"translateY(-50%) rotate(180deg)",writingMode:"vertical-rl",fontSize:14,color:box.color,opacity:.5,fontWeight:700,whiteSpace:"nowrap"}}>{box.label}</div>
             {box.thirds.map((th,idx)=>{const lf=(th.v-box.lo)/(box.hi-box.lo+1);return(
               <div key={th.v} style={{position:"absolute",left:0,right:0,bottom:`${lf*100}%`,borderBottom:idx===0?`1.5px solid ${box.color}50`:`1px dashed ${box.color}25`,pointerEvents:"none"}}>
-                <span style={{position:"absolute",left:1,bottom:0,fontSize:10,color:box.color,opacity:.6,fontWeight:600}}>{th.v}</span>
-                {th.t&&<span style={{position:"absolute",left:15,bottom:0,fontSize:9,color:box.color,opacity:.4,whiteSpace:"nowrap"}}>{th.t}</span>}
+                <span style={{position:"absolute",left:2,bottom:-2,fontSize:18,color:box.color,opacity:.7,fontWeight:700}}>{th.v}</span>
+                {th.t&&<span style={{position:"absolute",left:30,bottom:0,fontSize:11,color:box.color,opacity:.5,whiteSpace:"nowrap"}}>{th.t}</span>}
               </div>);})}
           </div>
         ))}
-        <div style={{position:"absolute",left:1,top:1,fontSize:10,color:"var(--t3)",fontWeight:600,zIndex:1}}>100</div>
+        <div style={{position:"absolute",left:0,right:0,top:2,fontSize:18,color:"var(--t3)",fontWeight:700,zIndex:1,textAlign:"center"}}>100</div>
         {laid.map(item=>{const box=BOXES.find(b=>item.score>=b.lo&&item.score<=b.hi)||BOXES[2];const isDr=dr===item.id;return(
-          <div key={item.id} onPointerDown={e=>onDown(e,item.id)} style={{position:"absolute",left:20,right:1,top:item.y,height:CH,display:"flex",alignItems:"center",gap:3,padding:"0 4px",background:isDr?`${box.color}20`:"var(--s3)",border:`1px solid ${isDr?box.color:"var(--bd2)"}`,borderRadius:3,cursor:isDr?"grabbing":"grab",zIndex:isDr?10:2,boxShadow:isDr?`0 2px 8px ${box.color}20`:"none",userSelect:"none",touchAction:"none"}}>
+          <div key={item.id} onPointerDown={e=>onDown(e,item.id)} style={{position:"absolute",left:28,right:18,top:item.y,height:CH,display:"flex",alignItems:"center",gap:3,padding:"0 4px",background:isDr?`${box.color}20`:"var(--s3)",border:`1px solid ${isDr?box.color:"var(--bd2)"}`,borderRadius:3,cursor:isDr?"grabbing":"grab",zIndex:isDr?10:2,boxShadow:isDr?`0 2px 8px ${box.color}20`:"none",userSelect:"none",touchAction:"none"}}>
             <span style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:colorFor(item.className)}}/>
             <span style={{flex:1,fontSize:13,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1}}>{item.name}</span>
             <span style={{fontSize:14,fontWeight:700,color:box.color,minWidth:18,textAlign:"right",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{item.score}</span>
@@ -943,8 +942,8 @@ export default function TwoColumnApp() {
         </Card>
         {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:14}}>No teams.</p>:<div>
           <div style={{display:"flex",flexDirection:"row",gap:6,marginBottom:8}}>
-            <Scale title={cap.sub1} subtitle="Sub 1" teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
-            <Scale title={cap.sub2} subtitle="Sub 2" teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
+            <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
           </div>
           <div style={{display:"flex",flexDirection:"row",gap:6}}>
             <div style={{flex:1,minWidth:0}}>
