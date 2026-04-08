@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -381,8 +384,6 @@ export default function FourColumnApp() {
   /* Export to XLSX using SheetJS */
   const exportXlsx = async () => {
     if (!cap) return;
-    if (!window.XLSX) { alert("Spreadsheet library not loaded. Please refresh the page."); return; }
-    const XLSX = window.XLSX;
     const wb = XLSX.utils.book_new();
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
 
@@ -476,8 +477,6 @@ export default function FourColumnApp() {
   /* Export to PDF using jsPDF */
   const exportPdf = async () => {
     if (!cap) return;
-    if (!window.jspdf) { alert("PDF library not loaded. Please refresh the page."); return; }
-    const { jsPDF } = window.jspdf;
     const capObj = CAPTIONS.find(c => c.key === judgeCap);
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
     let first = true;
