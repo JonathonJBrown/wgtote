@@ -660,8 +660,8 @@ export default function TwoColumnApp() {
 *{margin:0;padding:0;box-sizing:border-box}body,#root{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}`;
 
-  const thS={textAlign:"left",padding:"4px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:13,textTransform:"uppercase",letterSpacing:".3px"};
-  const tdS={padding:"4px 5px",borderBottom:"1px solid var(--bd)",fontSize:15};
+  const thS={textAlign:"left",padding:"5px 6px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:14,textTransform:"uppercase",letterSpacing:".3px"};
+  const tdS={padding:"5px 6px",borderBottom:"1px solid var(--bd)",fontSize:15};
 
   /* Factoring: RA/A classes have weighted EQ/MV sub-captions
      RA: Vocabulary x(60/100), Excellence x(140/100) — 60/140 split
@@ -706,25 +706,25 @@ export default function TwoColumnApp() {
           {sorted.map((t,i)=>(
             <tr key={t.id}>
               <td style={tdS}><div style={{textAlign:"center"}}>
-                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",fontSize:14,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
+                <div style={{fontSize:12,color:"var(--t3)"}}>{ordinal(i+1)}</div>
               </div></td>
-              <td style={{...tdS,fontWeight:500}}>{t.name}</td>
+              <td style={{...tdS,fontWeight:500,fontSize:15}}>{t.name}</td>
               <td style={{...tdS,textAlign:"center"}}>
-                <span style={{color:boxFor(t.s1).color,fontWeight:600}}>{t.s1}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
+                <span style={{color:boxFor(t.s1).color,fontWeight:600,fontSize:15}}>{t.s1}</span>
+                <div style={{fontSize:12,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
               </td>
               <td style={{...tdS,textAlign:"center"}}>
-                <span style={{color:boxFor(t.s2).color,fontWeight:600}}>{t.s2}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
+                <span style={{color:boxFor(t.s2).color,fontWeight:600,fontSize:15}}>{t.s2}</span>
+                <div style={{fontSize:12,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
               </td>
               <td style={{...tdS,textAlign:"right"}}>
-                <span style={{fontWeight:600,fontSize:15}}>{fmtTotal(t.tot)}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+                <span style={{fontWeight:600,fontSize:16}}>{fmtTotal(t.tot)}</span>
+                <div style={{fontSize:12,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
               </td>
               {factors && <td style={{...tdS,textAlign:"right"}}>
-                <span style={{fontWeight:700,fontSize:16,color:"var(--ac)"}}>{t.factored.toFixed(2)}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(fr.indexOf(t.id)+1)}</div>
+                <span style={{fontWeight:700,fontSize:17,color:"var(--ac)"}}>{t.factored.toFixed(2)}</span>
+                <div style={{fontSize:12,color:"var(--t3)"}}>{ordinal(fr.indexOf(t.id)+1)}</div>
               </td>}
             </tr>
           ))}

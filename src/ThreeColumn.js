@@ -691,8 +691,8 @@ export default function ThreeColumnApp() {
 *{margin:0;padding:0;box-sizing:border-box}body,#root{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}`;
 
-  const thS={textAlign:"left",padding:"4px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:13,textTransform:"uppercase",letterSpacing:".3px"};
-  const tdS={padding:"4px 5px",borderBottom:"1px solid var(--bd)",fontSize:15};
+  const thS={textAlign:"left",padding:"5px 6px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:14,textTransform:"uppercase",letterSpacing:".3px"};
+  const tdS={padding:"5px 6px",borderBottom:"1px solid var(--bd)",fontSize:15};
 
   /* Factoring: RA/A classes have weighted EQ/MV sub-captions
      RA: Vocabulary x(60/100), Excellence x(140/100) — 60/140 split
@@ -737,7 +737,7 @@ export default function ThreeColumnApp() {
           {sorted.map((t,i)=>(
             <tr key={t.id}>
               <td style={tdS}><div style={{textAlign:"center"}}>
-                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
+                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
                 <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
               </div></td>
               <td style={{...tdS,fontWeight:500}}>{t.name}</td>
@@ -994,31 +994,31 @@ export default function ThreeColumnApp() {
                   const s1r = [...rows].sort((a,b)=>b.s1-a.s1).map(t=>t.id);
                   const s2r = [...rows].sort((a,b)=>b.s2-a.s2).map(t=>t.id);
                   return (<div>
-                    {factors && <div style={{fontSize:10,color:"var(--ac)",marginBottom:3,textAlign:"center"}}>{factors.label} factoring</div>}
+                    {factors && <div style={{fontSize:12,color:"var(--ac)",marginBottom:3,textAlign:"center"}}>{factors.label} factoring</div>}
                     {rows.map((t,i)=>(
-                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:4,padding:"4px 4px",borderBottom:"1px solid var(--bd)",fontSize:13}}>
-                        <div style={{textAlign:"center",minWidth:20,flexShrink:0,paddingTop:2}}>
-                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:"50%",fontSize:11,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#CD7F32":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
-                          <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:5,padding:"5px 5px",borderBottom:"1px solid var(--bd)",fontSize:15}}>
+                        <div style={{textAlign:"center",minWidth:24,flexShrink:0,paddingTop:2}}>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
+                          <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
                         </div>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:13,marginBottom:2}}>{t.name}</div>
-                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--t3)"}}>
+                          <div style={{fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:15,marginBottom:3}}>{t.name}</div>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:"var(--t3)"}}>
                             <div style={{textAlign:"center"}}>
                               <div style={{color:boxFor(t.s1).color,fontWeight:600}}>{t.s1}</div>
-                              <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
                             </div>
                             <div style={{textAlign:"center"}}>
                               <div style={{color:boxFor(t.s2).color,fontWeight:600}}>{t.s2}</div>
-                              <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
                             </div>
                             <div style={{textAlign:"center"}}>
                               <div style={{fontWeight:600,color:"var(--t1)"}}>{fmtTotal(t.tot)}</div>
-                              <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
                             </div>
                             {factors && <div style={{textAlign:"center"}}>
                               <div style={{fontWeight:700,color:"var(--ac)"}}>{t.factored.toFixed(2)}</div>
-                              <div style={{fontSize:10,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
                             </div>}
                           </div>
                         </div>
