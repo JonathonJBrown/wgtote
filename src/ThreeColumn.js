@@ -290,9 +290,6 @@ function ClassSelect({ value, onChange, classes, onNewClass }) {
 
 /* ═══ APP ═══ */
 export default function ThreeColumnApp() {
-  const [authed, setAuthed] = useState(false);
-  const [pwInput, setPwInput] = useState("");
-  const [pwError, setPwError] = useState(false);
   const [teams, setTeams] = useState([]);
   const [scores, setScores] = useState({});
   const [tab, setTab] = useState("settings");
@@ -651,30 +648,6 @@ export default function ThreeColumnApp() {
 
   const handleScore = useCallback((k,v) => { setScores(p=>({...p,[k]:v})); setSaved(false); }, []);
   const capTotal = (tid,ck) => (scores[`${tid}_${ck}_1`]??50)+(scores[`${tid}_${ck}_2`]??50);
-
-  const tryAuth = () => {
-    if (pwInput.toLowerCase().trim() === "rankandrate") { setAuthed(true); setPwError(false); }
-    else setPwError(true);
-  };
-
-  if (!authed) return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0C0E13",fontFamily:"'DM Sans',sans-serif"}}>
-      <div style={{textAlign:"center",maxWidth:320,padding:24}}>
-        <h1 style={{fontSize:30,color:"#E8EAF0",marginBottom:4}}>Winter<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Guard</span> Tote</h1>
-        <p style={{fontSize:15,color:"#6B7590",marginBottom:20}}>Score tote sheet for Winterguard Judges</p>
-        <input
-          type="password"
-          value={pwInput}
-          onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
-          onKeyDown={e=>e.key==="Enter"&&tryAuth()}
-          placeholder="Enter access code"
-          style={{width:"100%",padding:"10px 14px",borderRadius:6,border:`2px solid ${pwError?"#EF4444":"#2A2F3D"}`,background:"#1B1F2A",color:"#E8EAF0",fontSize:18,fontFamily:"'DM Sans',sans-serif",outline:"none",textAlign:"center",marginBottom:10}}
-        />
-        {pwError && <p style={{fontSize:14,color:"#EF4444",marginBottom:8}}>Incorrect code. Try again.</p>}
-        <button onClick={tryAuth} style={{width:"100%",padding:"10px",borderRadius:6,border:"none",background:"#6C8AFF",color:"#fff",fontSize:18,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Enter</button>
-      </div>
-    </div>
-  );
 
   if (!ready) return <div style={{textAlign:"center",paddingTop:100,color:"#6B7590",fontFamily:"'DM Sans',sans-serif"}}>Loading...</div>;
 
