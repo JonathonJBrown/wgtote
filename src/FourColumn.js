@@ -792,19 +792,19 @@ export default function FourColumnApp() {
         </Card>
         <Card>
           <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:22,marginBottom:8}}>Event Info</h2>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
-            <div style={{flex:1,minWidth:120}}>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <div style={{flex:"0 0 auto"}}>
               <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Date</label>
-              <Inp type="date" value={eventDate} onChange={e=>{setEventDate(e.target.value);dirty()}} style={{width:"100%"}} />
+              <Inp type="date" value={eventDate} onChange={e=>{setEventDate(e.target.value);dirty()}} />
             </div>
-            <div style={{flex:2,minWidth:160}}>
+            <div style={{flex:1,minWidth:120}}>
               <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Venue / Event Name</label>
               <Inp placeholder="e.g. PPA Championships @ Wenatchee HS" value={eventVenue} onChange={e=>{setEventVenue(e.target.value);dirty()}} style={{width:"100%"}} />
             </div>
-          </div>
-          <div style={{flex:1}}>
-            <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
-            <Inp placeholder="Your name" value={judgeName} onChange={e=>{setJudgeName(e.target.value);dirty()}} style={{width:"100%",maxWidth:250}} />
+            <div style={{flex:"0 0 auto"}}>
+              <label style={{fontSize:13,color:"var(--t3)",display:"block",marginBottom:2}}>Judge Name</label>
+              <Inp placeholder="Your name" value={judgeName} onChange={e=>{setJudgeName(e.target.value);dirty()}} />
+            </div>
           </div>
         </Card>
         <Card>
