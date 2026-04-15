@@ -24,12 +24,52 @@ const colorFor = c => CLASS_COLORS[c] || "#6C8AFF";
 const ABBREV_MAP = { SRA:"Scholastic Regional A",SA:"Scholastic A",SO:"Scholastic Open",SW:"Scholastic World",IRA:"Independent Regional A",IA:"Independent A",IO:"Independent Open",IW:"Independent World",IS:"Independent Open",SAA:"Scholastic A" };
 const PERC = new Set(["PSA","PIA","PSO","PIO","PSW","PIW","PSC","PIC","PSRA","PIRA","PA","PO","PW"]);
 const SHORT = c => c.replace("Scholastic ","S/").replace("Independent ","I/");
-const ordinal = n => { const s=["th","st","nd","rd"],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+const ordinal = n => n;
 const fmtTotal = n => { const s = String(n); return s.length >= 2 ? s.slice(0,-1) + "." + s.slice(-1) : "0." + s; };
 
 const Store = {
-  async save(k,d){try{localStorage.setItem(`wg3:${k}`,JSON.stringify(d))}catch{}},
-  async load(k,fb){try{const s=localStorage.getItem(`wg3:${k}`);return s?JSON.parse(s):fb}catch{return fb}},
+  async save(k,d){try{localStorage.setItem(`jp:${k}`,JSON.stringify(d))}catch{}},
+  async load(k,fb){try{const s=localStorage.getItem(`jp:${k}`);return s?JSON.parse(s):fb}catch{return fb}},
+};
+
+/* IndexedDB for competitions and photos — much larger storage */
+const CompDB = {
+  _db: null,
+  async open() {
+    if (this._db) return this._db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open("JudgePro", 2);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("photos")) db.createObjectStore("photos");
+        if (!db.objectStoreNames.contains("competitions")) db.createObjectStore("competitions");
+        if (!db.objectStoreNames.contains("compList")) db.createObjectStore("compList");
+      };
+      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async saveComp(compId, data) {
+    try { const db = await this.open(); const tx = db.transaction("competitions","readwrite"); tx.objectStore("competitions").put(data, compId); } catch {}
+  },
+  async loadComp(compId) {
+    try { const db = await this.open(); return new Promise(r => { const req = db.transaction("competitions","readonly").objectStore("competitions").get(compId); req.onsuccess = () => r(req.result || null); req.onerror = () => r(null); }); } catch { return null; }
+  },
+  async deleteComp(compId) {
+    try { const db = await this.open(); db.transaction("competitions","readwrite").objectStore("competitions").delete(compId); db.transaction("photos","readwrite").objectStore("photos").delete(compId); } catch {}
+  },
+  async savePhotos(compId, photos) {
+    try { const db = await this.open(); db.transaction("photos","readwrite").objectStore("photos").put(photos, compId); } catch {}
+  },
+  async loadPhotos(compId) {
+    try { const db = await this.open(); return new Promise(r => { const req = db.transaction("photos","readonly").objectStore("photos").get(compId); req.onsuccess = () => r(req.result || {}); req.onerror = () => r({}); }); } catch { return {}; }
+  },
+  async saveCompList(list) {
+    try { const db = await this.open(); db.transaction("compList","readwrite").objectStore("compList").put(list, "list"); } catch {}
+  },
+  async loadCompList() {
+    try { const db = await this.open(); return new Promise(r => { const req = db.transaction("compList","readonly").objectStore("compList").get("list"); req.onsuccess = () => r(req.result || []); req.onerror = () => r([]); }); } catch { return []; }
+  },
 };
 
 /* ═══ PARSER ═══ */
@@ -261,6 +301,14 @@ function RoundSelect({ value, onChange, existingRounds }) {
 }
 
 /* ═══ Stable UI Components (outside App to prevent focus loss) ═══ */
+function TapScore({ value, color, onCommit, locked }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  if (locked) return <div style={{color,fontWeight:700,fontSize:22}}>{value}</div>;
+  if (!editing) return <div style={{color,fontWeight:700,fontSize:22,cursor:"pointer",borderBottom:"1px dashed transparent"}} onClick={()=>{setDraft(String(value));setEditing(true);}} onTouchEnd={e=>{e.preventDefault();setDraft(String(value));setEditing(true);}}>{value}</div>;
+  const commit = () => { const n=Math.max(0,Math.min(100,parseInt(draft)||0)); onCommit(n); setEditing(false); };
+  return <input type="text" inputMode="numeric" pattern="[0-9]*" value={draft} onChange={e=>setDraft(e.target.value.replace(/[^0-9]/g,""))} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter")commit();if(e.key==="Escape")setEditing(false);}} autoFocus style={{width:44,textAlign:"center",fontSize:22,fontWeight:700,color,background:"var(--s2)",border:"1px solid var(--ac)",borderRadius:3,padding:"1px 2px",outline:"none",fontFamily:"'DM Sans',sans-serif"}} />;
+}
 function Btn({children,primary,danger,sm,...p}) {
   return <button {...p} style={{display:"inline-flex",alignItems:"center",gap:4,padding:sm?"4px 8px":"7px 12px",borderRadius:5,fontSize:sm?10:11,fontWeight:600,cursor:"pointer",border:`1px solid ${primary?"var(--ac2)":"var(--bd)"}`,background:primary?"var(--ac)":"var(--s2)",color:danger?"var(--dng)":primary?"#fff":"var(--t1)",fontFamily:"'DM Sans',sans-serif",...p.style}}>{children}</button>;
 }
@@ -292,7 +340,51 @@ function ClassSelect({ value, onChange, classes, onNewClass }) {
 }
 
 /* ═══ APP ═══ */
-export default function ThreeColumnApp() {
+export default function JudgePro() {
+  /* Competition manager state */
+  const [compList, setCompList] = useState([]);
+  const [compId, setCompId] = useState(null);
+  const [compReady, setCompReady] = useState(false);
+  const [newCompName, setNewCompName] = useState("");
+
+  /* Load competition list on mount */
+  useEffect(() => { (async () => {
+    const list = await CompDB.loadCompList();
+    setCompList(list);
+    /* Check if there's an active comp from last session */
+    const lastComp = await Store.load("lastComp", null);
+    if (lastComp && list.find(c => c.id === lastComp)) setCompId(lastComp);
+    setCompReady(true);
+  })(); }, []);
+
+  const createComp = async () => {
+    const name = newCompName.trim();
+    if (!name) return;
+    const id = uid();
+    const comp = { id, name, createdAt: new Date().toISOString() };
+    const newList = [comp, ...compList];
+    setCompList(newList);
+    await CompDB.saveCompList(newList);
+    setNewCompName("");
+    setCompId(id);
+    await Store.save("lastComp", id);
+  };
+
+  const switchComp = async (id) => {
+    setCompId(id);
+    await Store.save("lastComp", id);
+    setReady(false);
+  };
+
+  const deleteComp = async (id) => {
+    const newList = compList.filter(c => c.id !== id);
+    setCompList(newList);
+    await CompDB.saveCompList(newList);
+    await CompDB.deleteComp(id);
+    if (compId === id) { setCompId(null); setReady(false); }
+  };
+
+  /* Per-competition state */
   const [teams, setTeams] = useState([]);
   const [scores, setScores] = useState({});
   const [tab, setTab] = useState("settings");
@@ -305,6 +397,9 @@ export default function ThreeColumnApp() {
   const [selRound, setSelRound] = useState("");
   const [tOrder, setTOrder] = useState("");
   const [schedText, setSchedText] = useState("");
+  const [schedUrl, setSchedUrl] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [urlMsg, setUrlMsg] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const [preview, setPreview] = useState(null);
   const [debugInfo, setDebugInfo] = useState("");
@@ -315,40 +410,58 @@ export default function ThreeColumnApp() {
   const [lastSaved, setLastSaved] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [layout, setLayout] = useState(null);
   const [lockedTotes, setLockedTotes] = useState({});
+  const [teamPhotos, setTeamPhotos] = useState({});
+  const [showPhotos, setShowPhotos] = useState(true);
+  const [viewingPhoto, setViewingPhoto] = useState(null);
   const [eventDate, setEventDate] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [judgeName, setJudgeName] = useState("");
   const [theme, setTheme] = useState("dark");
+  const [fontScale, setFontScale] = useState(100);
+  const [toteOrder, setToteOrder] = useState([]);
 
   const allClasses = useMemo(() => [...DEFAULT_CLASSES, ...customClasses], [customClasses]);
   const existingRounds = useMemo(() => [...new Set(teams.map(t=>t.round).filter(Boolean))].sort(), [teams]);
 
-  useEffect(() => { (async () => {
-    setTeams(await Store.load("teams",[])); setScores(await Store.load("scores",{}));
-    setJudgeCap(await Store.load("cap",null)); setCustomClasses(await Store.load("cc",[]));
-    setNotes(await Store.load("notes",{}));
-    setEventDate(await Store.load("eventDate",""));
-    setEventVenue(await Store.load("eventVenue",""));
+  useEffect(() => { if (!compId) { setReady(false); return; } (async () => {
+    const data = await CompDB.loadComp(compId);
+    if (data) {
+      setTeams(data.teams||[]); setScores(data.scores||{}); setJudgeCap(data.judgeCap||null);
+      setCustomClasses(data.customClasses||[]); setNotes(data.notes||{});
+      setEventDate(data.eventDate||""); setEventVenue(data.eventVenue||"");
+      setLockedTotes(data.lockedTotes||{}); setToteOrder(data.toteOrder||[]);
+    } else {
+      setTeams([]); setScores({}); setJudgeCap(null); setCustomClasses([]);
+      setNotes({}); setEventDate(""); setEventVenue(""); setLockedTotes({}); setToteOrder([]);
+    }
+    setTeamPhotos(await CompDB.loadPhotos(compId));
     setJudgeName(await Store.load("judgeName",""));
     setTheme(await Store.load("theme","dark"));
-    setLockedTotes(await Store.load("lockedTotes",{}));
+    setFontScale(await Store.load("fontScale",100));
+    setShowPhotos(await Store.load("showPhotos",true));
+    setLayout(await Store.load("layout",null));
+    setTab("settings"); setActiveTote(null);
     setReady(true);
-  })(); }, []);
+  })(); }, [compId]);
 
-  useEffect(() => { if (!ready) return; const t = setTimeout(async () => {
-    await Store.save("teams",teams); await Store.save("scores",scores);
-    await Store.save("cap",judgeCap); await Store.save("cc",customClasses);
-    await Store.save("notes",notes); await Store.save("eventDate",eventDate);
-    await Store.save("eventVenue",eventVenue); await Store.save("judgeName",judgeName);
+  useEffect(() => { if (!ready || !compId) return; const t = setTimeout(async () => {
+    await CompDB.saveComp(compId, { teams, scores, judgeCap, customClasses, notes, eventDate, eventVenue, lockedTotes, toteOrder });
+    await CompDB.savePhotos(compId, teamPhotos);
+    await Store.save("judgeName",judgeName);
     await Store.save("theme",theme);
-    await Store.save("lockedTotes",lockedTotes);
+    await Store.save("fontScale",fontScale);
+    await Store.save("showPhotos",showPhotos);
+    await Store.save("layout",layout);
+    const updated = compList.map(c => c.id===compId ? {...c, name: eventVenue || c.name, date: eventDate || c.date} : c);
+    if (JSON.stringify(updated)!==JSON.stringify(compList)) { setCompList(updated); await CompDB.saveCompList(updated); }
     setSaved(true); setLastSaved(new Date());
-  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,notes,eventDate,eventVenue,judgeName,theme,lockedTotes,ready]);
+  }, 400); return () => clearTimeout(t); }, [teams,scores,judgeCap,customClasses,notes,eventDate,eventVenue,judgeName,theme,lockedTotes,teamPhotos,showPhotos,layout,fontScale,toteOrder,compId,ready]);
 
   /* Download full backup as JSON file */
   const downloadBackup = () => {
-    const data = { teams, scores, notes, judgeCap, customClasses, eventDate, eventVenue, judgeName, exportedAt: new Date().toISOString() };
+    const data = { teams, scores, notes, judgeCap, customClasses, eventDate, eventVenue, judgeName, teamPhotos, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -374,6 +487,7 @@ export default function ThreeColumnApp() {
         if (data.eventDate) setEventDate(data.eventDate);
         if (data.eventVenue) setEventVenue(data.eventVenue);
         if (data.judgeName) setJudgeName(data.judgeName);
+        if (data.teamPhotos) setTeamPhotos(data.teamPhotos);
         dirty();
         setImportMsg("Backup restored successfully.");
       } catch { setImportMsg("Invalid backup file."); }
@@ -396,7 +510,7 @@ export default function ThreeColumnApp() {
         const s1 = scores[`${t.id}_${judgeCap}_1`] ?? 50;
         const s2 = scores[`${t.id}_${judgeCap}_2`] ?? 50;
         const tot = s1 + s2;
-        const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100) / 100 : null;
+        const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100 / 10) / 100 : null;
         const note = notes[t.id] || "";
         return { name: t.name, className: t.className, s1, s2, tot, factored, note, id: t.id };
       });
@@ -467,11 +581,7 @@ export default function ThreeColumnApp() {
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `JudgePro-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    window.open(url, "_blank");
   };
 
   /* Export to PDF using jsPDF */
@@ -492,7 +602,7 @@ export default function ThreeColumnApp() {
         const s1 = scores[`${t.id}_${judgeCap}_1`] ?? 50;
         const s2 = scores[`${t.id}_${judgeCap}_2`] ?? 50;
         const tot = s1 + s2;
-        const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100) / 100 : null;
+        const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100 / 10) / 100 : null;
         const note = notes[t.id] || "";
         return { name: t.name, className: t.className, s1, s2, tot, factored, note, id: t.id };
       });
@@ -518,10 +628,36 @@ export default function ThreeColumnApp() {
       const rankBody = ranked.map((t, i) => { const row = [ordinal(i + 1), t.name, t.s1, ordinal(s1sorted.indexOf(t.id) + 1), t.s2, ordinal(s2sorted.indexOf(t.id) + 1), fmtTotal(t.tot), ordinal(totSorted.indexOf(t.id) + 1)]; if (factors) row.push(t.factored, ordinal(i + 1)); return row; });
       doc.autoTable({ startY: y, head: [rankHeaders], body: rankBody, theme: "grid", styles: { fontSize: 8, cellPadding: 1.5 }, headStyles: { fillColor: [30, 40, 60], textColor: 255 }, margin: { left: 14, right: 14 } });
     }
-    doc.save(`JudgePro-${eventDate || "export"}-${(judgeName || "scores").replace(/\s+/g, "-")}.pdf`);
+    const pdfBlob = doc.output("blob");
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, "_blank");
   };
 
   const dirty = () => setSaved(false);
+
+  /* Team photo handling — compress to max 200x200 thumbnail */
+  const handlePhotoUpload = (teamId, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxSize = 800;
+        let w = img.width, h = img.height;
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        setTeamPhotos(p => ({ ...p, [teamId]: dataUrl }));
+        dirty();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  const removePhoto = (teamId) => { setTeamPhotos(p => { const n = { ...p }; delete n[teamId]; return n; }); dirty(); };
 
   /* Reverse map: class name → shortest abbreviation */
   const classToAbbrev = useMemo(() => {
@@ -542,11 +678,6 @@ export default function ThreeColumnApp() {
     if (t.round) return abbr + "-" + roundNum(t.round);
     return abbr;
   };
-
-  /* Tote order: persisted array of tote keys. New totes append at end. */
-  const [toteOrder, setToteOrder] = useState([]);
-  useEffect(() => { (async () => { setToteOrder(await Store.load("toteOrder", [])); })(); }, []);
-  useEffect(() => { if (ready && toteOrder.length) Store.save("toteOrder", toteOrder); }, [toteOrder, ready]);
 
   const rawTotes = useMemo(() => {
     const m = new Map();
@@ -589,25 +720,34 @@ export default function ThreeColumnApp() {
     return [...ordered, ...leftover];
   }, [rawTotes, toteOrder]);
 
-  /* Drag to reorder tote tabs */
+  /* Drag to reorder tote tabs — touch/pointer compatible for Safari */
   const [dragTote, setDragTote] = useState(null);
   const [dragOverTote, setDragOverTote] = useState(null);
+  const tabBarRef = useRef(null);
+  const longPressTimer = useRef(null);
 
-  const handleToteDragStart = (key) => { setDragTote(key); };
-  const handleToteDragOver = (e, key) => { e.preventDefault(); setDragOverTote(key); };
-  const handleToteDrop = (targetKey) => {
-    if (!dragTote || dragTote === targetKey) { setDragTote(null); setDragOverTote(null); return; }
-    const currentOrder = totes.map(t => t.key);
-    const fromIdx = currentOrder.indexOf(dragTote);
-    const toIdx = currentOrder.indexOf(targetKey);
-    if (fromIdx === -1 || toIdx === -1) { setDragTote(null); setDragOverTote(null); return; }
-    const newOrder = [...currentOrder];
-    newOrder.splice(fromIdx, 1);
-    newOrder.splice(toIdx, 0, dragTote);
-    setToteOrder(newOrder);
+  const handleTotePointerDown = (key) => {
+    longPressTimer.current = setTimeout(() => { setDragTote(key); }, 300);
+  };
+  const handleTotePointerUp = (key) => {
+    clearTimeout(longPressTimer.current);
+    if (dragTote && dragTote !== key) {
+      const currentOrder = totes.map(t => t.key);
+      const fromIdx = currentOrder.indexOf(dragTote);
+      const toIdx = currentOrder.indexOf(key);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const newOrder = [...currentOrder];
+        newOrder.splice(fromIdx, 1);
+        newOrder.splice(toIdx, 0, dragTote);
+        setToteOrder(newOrder);
+        dirty();
+      }
+    }
     setDragTote(null);
     setDragOverTote(null);
   };
+  const handleTotePointerEnter = (key) => { if (dragTote) setDragOverTote(key); };
+  const cancelDrag = () => { clearTimeout(longPressTimer.current); setDragTote(null); setDragOverTote(null); };
   const toteTeams = k => { const [cls,rnd]=k.split("|||"); return teams.filter(t=>t.className===cls&&(t.round||"")===rnd).sort((a,b)=>a.order-b.order); };
   const initScores = tid => { const s={}; CAPTIONS.forEach(c=>{s[`${tid}_${c.key}_1`]=50;s[`${tid}_${c.key}_2`]=50;}); return s; };
 
@@ -634,6 +774,35 @@ export default function ThreeColumnApp() {
     else { setImportMsg(""); setPreview(result.teams); }
   };
 
+  const fetchScheduleUrl = async () => {
+    const url = schedUrl.trim();
+    if (!url) { setUrlMsg("Enter a URL first."); return; }
+    if (!url.includes("schedules.competitionsuite.com") && !url.includes("competitionsuite.com")) {
+      setUrlMsg("Please enter a CompetitionSuite schedule URL."); return;
+    }
+    setFetchingUrl(true); setUrlMsg("");
+    try {
+      const res = await fetch(`/api/compsuite?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const text = await res.text();
+      if (!text || text.length < 50) throw new Error("Empty response");
+      setSchedText(text);
+      const result = parseSchedule(text, customClasses);
+      setDebugInfo(result.debug);
+      if (result.teams.length > 0) {
+        setPreview(result.teams);
+        setUrlMsg(`Found ${result.teams.length} teams.`);
+        setImportMsg("");
+      } else {
+        setUrlMsg("Fetched page but no teams found. Try paste method instead.");
+        setPreview(null);
+      }
+    } catch (err) {
+      setUrlMsg(`Fetch failed: ${err.message}. Try the paste method instead.`);
+    }
+    setFetchingUrl(false);
+  };
+
   const handlePaste = e => {
     let text = "";
     if (e.clipboardData) text = e.clipboardData.getData("text/plain") || e.clipboardData.getData("text") || "";
@@ -643,7 +812,59 @@ export default function ThreeColumnApp() {
   const handleScore = useCallback((k,v) => { setScores(p=>({...p,[k]:v})); setSaved(false); }, []);
   const capTotal = (tid,ck) => (scores[`${tid}_${ck}_1`]??50)+(scores[`${tid}_${ck}_2`]??50);
 
+  if (!compReady) return <div style={{textAlign:"center",paddingTop:100,color:"#6B7590",fontFamily:"'DM Sans',sans-serif"}}>Loading...</div>;
+
+  /* Competition picker */
+  if (!compId) return (
+    <div style={{minHeight:"100vh",background:"#0C0E13",fontFamily:"'DM Sans',sans-serif",padding:"24px 16px"}}>
+      <div style={{maxWidth:500,margin:"0 auto"}}>
+        <h1 style={{fontSize:26,color:"#E8EAF0",marginBottom:4,textAlign:"center"}}>Judge<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Pro</span></h1>
+        <p style={{fontSize:12,color:"#6B7590",marginBottom:20,textAlign:"center"}}>Select a competition or create a new one</p>
+        <div style={{display:"flex",gap:6,marginBottom:16}}>
+          <input value={newCompName} onChange={e=>setNewCompName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&createComp()}
+            placeholder="New competition name (e.g. PPA Championships)"
+            style={{flex:1,padding:"10px 14px",borderRadius:6,border:"2px solid #2A2F3D",background:"#1B1F2A",color:"#E8EAF0",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none"}} />
+          <button onClick={createComp} style={{padding:"10px 18px",borderRadius:6,border:"none",background:"#6C8AFF",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>+ New</button>
+        </div>
+        {compList.length===0&&<div style={{textAlign:"center",padding:40,color:"#4B5563",fontSize:14}}>No competitions yet. Create your first one above.</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {compList.map(c=>(
+            <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"14px 16px",borderRadius:8,border:"2px solid #2A2F3D",background:"#14171E",cursor:"pointer"}} onClick={()=>switchComp(c.id)}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:600,color:"#E8EAF0"}}>{c.name}</div>
+                <div style={{fontSize:11,color:"#6B7590",marginTop:2}}>{c.date||""}{c.date&&" · "}{new Date(c.createdAt).toLocaleDateString()}</div>
+              </div>
+              <button onClick={e=>{e.stopPropagation();if(confirm("Delete this competition and all its data?")){deleteComp(c.id);}}} style={{background:"none",border:"none",color:"#4B5563",cursor:"pointer",fontSize:18,padding:"0 4px"}}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   if (!ready) return <div style={{textAlign:"center",paddingTop:100,color:"#6B7590",fontFamily:"'DM Sans',sans-serif"}}>Loading...</div>;
+
+  if (!layout) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0C0E13",fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{textAlign:"center",maxWidth:400,padding:24}}>
+        <h1 style={{fontSize:26,color:"#E8EAF0",marginBottom:4}}>Judge<span style={{color:"#6C8AFF",fontStyle:"italic"}}>Pro</span></h1>
+        <p style={{fontSize:11,color:"#6B7590",marginBottom:24}}>Choose your preferred layout</p>
+        <button onClick={()=>{setLayout("2col");dirty()}} style={{width:"100%",padding:"16px 20px",borderRadius:8,border:"2px solid #2A2F3D",background:"#14171E",color:"#E8EAF0",cursor:"pointer",marginBottom:10,textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+          <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>2 Column</div>
+          <div style={{fontSize:10,color:"#9BA3B5",lineHeight:1.4}}>Two scoring scales on top, ranking table + notes side by side below. Best for smaller screens or iPad split-screen.</div>
+        </button>
+        <button onClick={()=>{setLayout("3col");dirty()}} style={{width:"100%",padding:"16px 20px",borderRadius:8,border:"2px solid #2A2F3D",background:"#14171E",color:"#E8EAF0",cursor:"pointer",marginBottom:10,textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+          <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>3 Column</div>
+          <div style={{fontSize:10,color:"#9BA3B5",lineHeight:1.4}}>Vocabulary, Excellence, and Ranking panel all side by side with notes below. Best for full-screen iPad portrait.</div>
+        </button>
+        <button onClick={()=>{setLayout("4col");dirty()}} style={{width:"100%",padding:"16px 20px",borderRadius:8,border:"2px solid #2A2F3D",background:"#14171E",color:"#E8EAF0",cursor:"pointer",marginBottom:16,textAlign:"left",fontFamily:"'DM Sans',sans-serif"}}>
+          <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>4 Column</div>
+          <div style={{fontSize:10,color:"#9BA3B5",lineHeight:1.4}}>Vocabulary, Excellence, Ranking, and Notes all side by side. Best for full-screen iPad landscape or desktop.</div>
+        </button>
+        <p style={{fontSize:9,color:"#6B7590"}}>You can switch layouts later in Settings.</p>
+      </div>
+    </div>
+  );
 
   const cap = CAPTIONS.find(c=>c.key===judgeCap);
   const curTote = totes.find(t=>t.key===activeTote);
@@ -682,47 +903,47 @@ export default function ThreeColumnApp() {
       const s1 = scores[`${t.id}_${capKey}_1`] ?? 50;
       const s2 = scores[`${t.id}_${capKey}_2`] ?? 50;
       const tot = s1 + s2;
-      const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100) / 100 : null;
+      const factored = factors ? Math.round((s1 * factors.vocabF + s2 * factors.excelF) * 100 / 10) / 100 : null;
       return { ...t, s1, s2, tot, factored };
     });
     const sorted = [...rows].sort((a,b) => factors ? (b.factored - a.factored) : (b.tot - a.tot));
     const s1r = [...rows].sort((a,b)=>b.s1-a.s1).map(t=>t.id);
     const s2r = [...rows].sort((a,b)=>b.s2-a.s2).map(t=>t.id);
     const fr = factors ? [...rows].sort((a,b)=>b.factored-a.factored).map(t=>t.id) : [];
+    const s1Ties=new Set(),s2Ties=new Set(),totTies=new Set(); for(let a=0;a<sorted.length;a++)for(let b=a+1;b<sorted.length;b++){const x=sorted[a],y=sorted[b]; if(x.s1===y.s1){s1Ties.add(x.id);s1Ties.add(y.id);} if(x.s2===y.s2){s2Ties.add(x.id);s2Ties.add(y.id);} if(x.tot===y.tot){totTies.add(x.id);totTies.add(y.id);}}
     return (
       <div>
         {factors && <div style={{fontSize:13,color:"var(--ac)",marginBottom:4,padding:"3px 6px",background:"rgba(108,138,255,.08)",borderRadius:3}}>
-          Factored: {sub1Label} x({factors.label.split("/")[0]}/100) + {sub2Label} x({factors.label.split("/")[1]}/100)
+          Factored: {sub1Label} ×{factors.vocabF} + {sub2Label} ×{factors.excelF} ({factors.label})
         </div>}
         <table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>
           <th style={thS}>Rank</th><th style={thS}>Team</th>
           <th style={{...thS,textAlign:"center"}}>{sub1Label}</th>
           <th style={{...thS,textAlign:"center"}}>{sub2Label}</th>
-          <th style={{...thS,textAlign:"right"}}>Raw</th>
+          <th style={{...thS,textAlign:"right"}}>Total</th>
           {factors && <th style={{...thS,textAlign:"right",color:"var(--ac)"}}>Factored</th>}
         </tr></thead><tbody>
           {sorted.map((t,i)=>(
-            <tr key={t.id}>
+            <tr key={t.id} style={{background:totTies.has(t.id)?"rgba(239,68,68,.08)":"transparent"}}>
               <td style={tdS}><div style={{textAlign:"center"}}>
-                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:"50%",fontSize:16,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
               </div></td>
               <td style={{...tdS,fontWeight:500}}>{t.name}</td>
-              <td style={{...tdS,textAlign:"center"}}>
-                <span style={{color:boxFor(t.s1).color,fontWeight:600}}>{t.s1}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
+              <td style={{...tdS,textAlign:"center",background:s1Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent"}}>
+                <TapScore value={t.s1} color={boxFor(t.s1).color} onCommit={v=>handleScore(`${t.id}_${capKey}_1`,v)} locked={false} />
+                <div style={{fontSize:11,color:"var(--t3)"}}>{(s1r.indexOf(t.id)+1)}</div>
               </td>
-              <td style={{...tdS,textAlign:"center"}}>
-                <span style={{color:boxFor(t.s2).color,fontWeight:600}}>{t.s2}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
+              <td style={{...tdS,textAlign:"center",background:s2Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent"}}>
+                <TapScore value={t.s2} color={boxFor(t.s2).color} onCommit={v=>handleScore(`${t.id}_${capKey}_2`,v)} locked={false} />
+                <div style={{fontSize:11,color:"var(--t3)"}}>{(s2r.indexOf(t.id)+1)}</div>
               </td>
-              <td style={{...tdS,textAlign:"right"}}>
-                <span style={{fontWeight:600,fontSize:15}}>{fmtTotal(t.tot)}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+              <td style={{...tdS,textAlign:"right",background:totTies.has(t.id)?"rgba(239,68,68,.2)":"transparent"}}>
+                <span style={{fontWeight:700,fontSize:22,color:totTies.has(t.id)?"var(--dng)":"inherit"}}>{fmtTotal(t.tot)}</span>
+                <div style={{fontSize:11,color:"var(--t3)"}}>{([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
               </td>
               {factors && <td style={{...tdS,textAlign:"right"}}>
                 <span style={{fontWeight:700,fontSize:16,color:"var(--ac)"}}>{t.factored.toFixed(2)}</span>
-                <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(fr.indexOf(t.id)+1)}</div>
+                <div style={{fontSize:11,color:"var(--t3)"}}>{(fr.indexOf(t.id)+1)}</div>
               </td>}
             </tr>
           ))}
@@ -733,7 +954,7 @@ export default function ThreeColumnApp() {
 
   return (
     <div><style>{css}</style>
-    <div style={{maxWidth:1200,margin:"0 auto",padding:"4px 8px"}}>
+    <div style={{maxWidth:1200,margin:"0 auto",padding:"4px 8px",zoom:fontScale/100}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 6px",borderBottom:"1px solid var(--bd)",marginBottom:8,flexWrap:"wrap",gap:4}}>
         <div>
           <h1 style={{fontFamily:"'DM Sans',sans-serif",fontSize:26}}>Judge<span style={{color:"var(--ac)",fontStyle:"italic"}}>Pro</span></h1>
@@ -756,14 +977,14 @@ export default function ThreeColumnApp() {
         {["settings","teams","import"].map(k=><button key={k} onClick={()=>setTab(k)} style={{padding:"5px 11px",borderRadius:4,fontSize:14,fontWeight:600,cursor:"pointer",color:tab===k?"#fff":"var(--t2)",background:tab===k?"var(--ac)":"transparent",border:"none",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif",textTransform:"capitalize",flexShrink:0}}>{k}</button>)}
         {cap&&<div style={{width:1,height:16,background:"var(--bd)",flexShrink:0,margin:"0 2px"}}/>}
         {cap&&totes.map(t=><button key={t.key}
-          draggable
-          onDragStart={()=>handleToteDragStart(t.key)}
-          onDragOver={e=>handleToteDragOver(e,t.key)}
-          onDrop={()=>handleToteDrop(t.key)}
-          onDragEnd={()=>{setDragTote(null);setDragOverTote(null);}}
-          onClick={()=>{setTab("score");setActiveTote(t.key)}}
+          onPointerDown={()=>handleTotePointerDown(t.key)}
+          onPointerUp={()=>handleTotePointerUp(t.key)}
+          onPointerEnter={()=>handleTotePointerEnter(t.key)}
+          onPointerCancel={cancelDrag}
+          onPointerLeave={()=>{if(!dragTote)clearTimeout(longPressTimer.current);}}
+          onClick={()=>{if(!dragTote){setTab("score");setActiveTote(t.key)}}}
           style={{
-            padding:"5px 7px",borderRadius:4,fontSize:13,fontWeight:600,cursor:"grab",
+            padding:"5px 7px",borderRadius:4,fontSize:13,fontWeight:600,cursor:dragTote?"grabbing":"pointer",
             color:tab==="score"&&activeTote===t.key?"#fff":"var(--t2)",
             background:tab==="score"&&activeTote===t.key?"var(--ac)":dragOverTote===t.key?"var(--s3)":"transparent",
             border:dragOverTote===t.key?"1px dashed var(--ac)":"1px solid transparent",
@@ -771,7 +992,7 @@ export default function ThreeColumnApp() {
             whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif",
             opacity:dragTote===t.key?0.4:1,
             transition:"opacity .15s, background .15s",
-            flexShrink:0,
+            flexShrink:0,touchAction:"none",
           }}>{toteTabLabel(t)}</button>)}
         <button onClick={()=>setTab("summary")} style={{padding:"5px 11px",borderRadius:4,fontSize:14,fontWeight:600,cursor:"pointer",color:tab==="summary"?"#fff":"var(--t2)",background:tab==="summary"?"var(--ac)":"transparent",border:"none",fontFamily:"'DM Sans',sans-serif",marginLeft:"auto",flexShrink:0}}>Summary</button>
       </div>
@@ -787,7 +1008,14 @@ export default function ThreeColumnApp() {
                 <button onClick={()=>{setTheme("dark");dirty()}} style={{padding:"5px 14px",fontSize:14,fontWeight:600,cursor:"pointer",border:"none",borderLeft:"1px solid var(--bd)",fontFamily:"'DM Sans',sans-serif",background:theme==="dark"?"var(--ac)":"var(--s2)",color:theme==="dark"?"#fff":"var(--t2)"}}>Dark</button>
               </div>
             </div>
-            <Btn sm onClick={()=>{localStorage.removeItem("wg_layout");window.location.reload()}}>Switch Layout</Btn>
+            <Btn sm onClick={()=>{setLayout(l=>l==="2col"?"3col":l==="3col"?"4col":"2col");dirty()}}>Layout: {layout==="2col"?"2 Col":layout==="3col"?"3 Col":"4 Col"}</Btn>
+            <Btn sm onClick={()=>{setCompId(null);setReady(false);}}>Competitions</Btn>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+            <span style={{fontSize:13,color:"var(--t3)",whiteSpace:"nowrap"}}>Font Size</span>
+            <input type="range" min={80} max={140} step={5} value={fontScale} onChange={e=>{setFontScale(Number(e.target.value));dirty()}} style={{flex:1,maxWidth:160}} />
+            <span style={{fontSize:13,color:"var(--t2)",minWidth:36,textAlign:"right"}}>{fontScale}%</span>
+            {fontScale!==100&&<button onClick={()=>{setFontScale(100);dirty()}} style={{fontSize:11,color:"var(--ac)",background:"none",border:"none",cursor:"pointer",padding:0}}>Reset</button>}
           </div>
         </Card>
         <Card>
@@ -808,13 +1036,21 @@ export default function ThreeColumnApp() {
           </div>
         </Card>
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:22,marginBottom:8}}>Judge Caption</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:22,marginBottom:3}}>Judge Caption</h2>
+          <p style={{fontSize:12,color:"var(--t3)",marginBottom:8}}>Select your assigned caption. This must be set before importing or scoring.</p>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
             {CAPTIONS.map(c=><button key={c.key} onClick={()=>{setJudgeCap(c.key);dirty()}} style={{padding:"10px 8px",borderRadius:6,cursor:"pointer",textAlign:"left",background:judgeCap===c.key?`${c.clr}15`:"var(--s2)",border:`2px solid ${judgeCap===c.key?c.clr:"var(--bd)"}`,fontFamily:"'DM Sans',sans-serif",color:"var(--t1)"}}>
               <div style={{fontSize:18,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:"var(--t1)"}}>{c.short}</div>
               <div style={{fontSize:14,fontWeight:600,marginTop:1,color:"var(--t1)"}}>{c.label}</div>
               <div style={{fontSize:13,color:"var(--t3)",marginTop:2}}>{c.sub1} + {c.sub2}</div>
             </button>)}
+          </div>
+        </Card>
+        <Card>
+          <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,marginBottom:6}}>Display Options</h3>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span style={{fontSize:14,color:"var(--t2)"}}>Show team photos</span>
+            <button onClick={()=>{setShowPhotos(p=>!p);dirty()}} style={{padding:"4px 12px",borderRadius:4,border:"1px solid var(--bd)",background:showPhotos?"var(--ac)":"var(--s2)",color:showPhotos?"#fff":"var(--t2)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>{showPhotos?"On":"Off"}</button>
           </div>
         </Card>
         <Card>
@@ -852,17 +1088,19 @@ export default function ThreeColumnApp() {
           <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,marginBottom:6}}>WGI Score Sheets & Resources</h3>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
             <a href="https://www.wgi.org/color-guard/cg-score-sheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Score Sheets by Caption & Class (wgi.org)</a>
-            <a href="https://www.wgi.org/wp-content/uploads/2025/09/2026_WGI_ColorGuard_Adj-Manual_-Rulebook_Sep25.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>2026 Adjudication Manual & Rulebook (PDF)</a>
+            <a href="https://www.wgi.org/color-guard/" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>WGI Color Guard Resources 2026 Adjudication Manual & Rulebook (PDF) Manuals</a>
             <a href="https://www.wgi.org/scoresheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Official WGI Score Sheets Portal</a>
-            <a href="https://www.wgi.org/wp-content/uploads/2023/01/FAQ-CAPTIONS-AND-SCORING.pdf" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>FAQ: Captions & Scoring (PDF)</a>
+            <a href="https://www.wgi.org/color-guard/cg-score-sheets/" target="_blank" rel="noopener noreferrer" style={{fontSize:15,color:"var(--ac)",textDecoration:"none",padding:"6px 8px",background:"var(--s2)",borderRadius:4,border:"1px solid var(--bd)"}}>Score Sheets FAQ: Captions & Scoring (PDF) Scoring FAQ (wgi.org)</a>
           </div>
         </Card>
       </div>}
 
       {/* TEAMS */}
       {tab==="teams"&&<div style={{animation:"fadeIn .2s"}}>
+        {!cap&&<Card><p style={{fontSize:14,color:"var(--warn)",textAlign:"center"}}>Select a judge caption in Settings first — tote tabs won't appear until a caption is chosen.</p></Card>}
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:6}}>Add Team</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:3}}>Add Team</h2>
+          <p style={{fontSize:12,color:"var(--t3)",marginBottom:6}}>Enter a team name, select their class and round, then tap +. The # field sets performance order (optional).</p>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"flex-start"}}>
             <Inp placeholder="Team name" value={tName} onChange={e=>setTName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTeam()} style={{flex:1,minWidth:100}}/>
             <ClassSelect value={selClass} onChange={setSelClass} classes={allClasses} onNewClass={n=>{if(!allClasses.includes(n)){setCustomClasses(p=>[...p,n]);dirty();}}} />
@@ -880,6 +1118,12 @@ export default function ThreeColumnApp() {
           </div>
           {toteTeams(tote.key).map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 7px",background:"var(--s2)",borderRadius:3,border:"1px solid var(--bd)",marginBottom:2}}>
             <span style={{fontSize:13,color:"var(--t3)",minWidth:14}}>{t.order}</span>
+            {teamPhotos[t.id]?<div style={{position:"relative",flexShrink:0}}>
+              <img src={teamPhotos[t.id]} alt="" style={{width:40,height:40,borderRadius:5,objectFit:"cover",cursor:"pointer"}} onClick={()=>setViewingPhoto(teamPhotos[t.id])} />
+              <button onClick={()=>removePhoto(t.id)} style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:"var(--dng)",color:"#fff",border:"none",fontSize:9,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button>
+            </div>:<label style={{width:40,height:40,borderRadius:5,border:"1px dashed var(--bd)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:16,color:"var(--t3)"}}>
+              +<input type="file" accept="image/*" onChange={e=>handlePhotoUpload(t.id,e.target.files[0])} style={{display:"none"}} />
+            </label>}
             <input value={t.name} onChange={e=>renameTeam(t.id,e.target.value)} style={{flex:1,fontSize:14,fontWeight:500,padding:"2px 4px",borderRadius:3,border:"1px solid transparent",background:"transparent",color:"var(--t1)",fontFamily:"'DM Sans',sans-serif",outline:"none"}} onFocus={e=>{e.target.style.borderColor="var(--bd)";e.target.style.background="var(--s1)"}} onBlur={e=>{e.target.style.borderColor="transparent";e.target.style.background="transparent"}} />
             {t.time&&<span style={{fontSize:11,color:"var(--t3)"}}>{t.time}</span>}
             <button onClick={()=>removeTeam(t.id)} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer",fontSize:16}}>x</button>
@@ -889,10 +1133,25 @@ export default function ThreeColumnApp() {
 
       {/* IMPORT */}
       {tab==="import"&&<div style={{animation:"fadeIn .2s"}}>
+        {!cap&&<Card><p style={{fontSize:14,color:"var(--warn)",textAlign:"center"}}>Select a judge caption in Settings first — you must choose a caption before importing.</p></Card>}
         <Card>
-          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:6}}>Import Schedule</h2>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:6}}>Import from URL</h2>
+          <p style={{fontSize:12,color:"var(--t3)",marginBottom:6}}>Paste a CompetitionSuite schedule URL and tap Fetch. The schedule will be loaded automatically.</p>
+          <div style={{display:"flex",gap:4,marginBottom:6}}>
+            <input value={schedUrl} onChange={e=>setSchedUrl(e.target.value)} onKeyDown={e=>e.key==="Enter"&&fetchScheduleUrl()}
+              placeholder="https://schedules.competitionsuite.com/..."
+              style={{flex:1,padding:"8px 10px",borderRadius:5,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none"}} />
+            <Btn primary onClick={fetchScheduleUrl} style={{opacity:fetchingUrl?0.5:1}}>{fetchingUrl?"Fetching...":"Fetch"}</Btn>
+          </div>
+          {urlMsg&&<div style={{fontSize:13,padding:"4px 8px",background:"var(--s2)",borderRadius:4,color:urlMsg.includes("Found")?"var(--ok)":"var(--warn)"}}>{urlMsg}</div>}
+        </Card>
+        <Card>
+          <h2 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,marginBottom:6}}>Or Paste Schedule</h2>
           <div style={{fontSize:14,color:"var(--t2)",lineHeight:1.5,marginBottom:8,background:"var(--s2)",padding:8,borderRadius:5}}>
-            Open schedule link in browser. <b>Ctrl+A</b> then <b>Ctrl+C</b>. Click below. <b>Ctrl+V</b>.
+            <b>Step 1:</b> Open your CompetitionSuite schedule link in a browser.<br/>
+            <b>Step 2:</b> Select all (<b>Ctrl+A</b>) then copy (<b>Ctrl+C</b>).<br/>
+            <b>Step 3:</b> Tap the box below and paste (<b>Ctrl+V</b>).<br/>
+            <b>Step 4:</b> Tap <b>Parse Schedule</b> to preview, then <b>Confirm Import</b>.
           </div>
           <textarea value={schedText} onChange={e=>setSchedText(e.target.value)} onPaste={handlePaste}
             placeholder="Click here and Ctrl+V to paste schedule..."
@@ -942,6 +1201,58 @@ export default function ThreeColumnApp() {
           </div>
         </Card>
         {curTeams.length===0?<p style={{textAlign:"center",padding:24,color:"var(--t3)",fontSize:14}}>No teams.</p>:<div>
+          {layout==="2col"?<>
+          <div style={{display:"flex",flexDirection:"row",gap:6,marginBottom:8,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
+            <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
+            <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+          </div>
+          <div style={{display:"flex",flexDirection:"row",gap:6}}>
+            <div style={{flex:1,minWidth:0}}>
+              <Card>
+                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16,marginBottom:4}}>Ranking</h3>
+                <ScoreTable teamList={curTeams} capKey={judgeCap} sub1Label={cap.sub1} sub2Label={cap.sub2} className={curTote.className} />
+              </Card>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{background:"var(--s1)",border:"1px solid var(--bd)",borderRadius:7,padding:10}}>
+                <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:16,marginBottom:4}}>Notes</h3>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead>
+                    <tr>
+                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:11,textTransform:"uppercase",width:100}}>Team</th>
+                      <th style={{textAlign:"left",padding:"3px 5px",borderBottom:"2px solid var(--bd)",color:"var(--t2)",fontWeight:600,fontSize:11,textTransform:"uppercase"}}>Comments</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {curTeams.map(t=>(
+                      <tr key={t.id}>
+                        <td style={{padding:"2px 5px",borderBottom:"1px solid var(--bd)",fontSize:13,fontWeight:500,verticalAlign:"top",whiteSpace:"nowrap"}}>{t.name}</td>
+                        <td style={{padding:"2px 3px",borderBottom:"1px solid var(--bd)"}}>
+                          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+                            <textarea
+                              value={notes[t.id]||""}
+                              onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                              ref={el=>{if(el){el.style.height="auto";el.style.height=el.scrollHeight+"px";}}} onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                              readOnly={!!lockedTotes[activeTote]}
+                              placeholder="..."
+                              rows={1}
+                              style={{flex:1,padding:"2px 5px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:22,overflow:"hidden"}}
+                            />
+                            <label style={{flexShrink:0,cursor:"pointer",padding:"2px 4px",borderRadius:3,background:"var(--s3)",display:"flex",alignItems:"center",marginTop:1}}>
+                              <span style={{fontSize:14}}>📷</span>
+                              <input type="file" accept="image/*" capture="environment" onChange={e=>handlePhotoUpload(t.id,e.target.files[0])} style={{display:"none"}} />
+                            </label>
+                            {teamPhotos[t.id]&&<div style={{position:"relative",flexShrink:0,marginTop:1}}><img src={teamPhotos[t.id]} alt="" style={{width:32,height:32,borderRadius:4,objectFit:"cover",cursor:"pointer"}} onClick={()=>setViewingPhoto(teamPhotos[t.id])} /><button onClick={()=>removePhoto(t.id)} style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:"var(--dng)",color:"#fff",border:"none",fontSize:9,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button></div>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          </>:layout==="3col"?<>
           <div style={{display:"flex",flexDirection:"row",gap:6}}>
             <div style={{flex:1,minWidth:0,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
               <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
@@ -961,38 +1272,35 @@ export default function ThreeColumnApp() {
                     const s1 = scores[`${t.id}_${judgeCap}_1`]??50;
                     const s2 = scores[`${t.id}_${judgeCap}_2`]??50;
                     const tot = s1 + s2;
-                    const factored = factors ? Math.round((s1*factors.vocabF + s2*factors.excelF)*100)/100 : null;
+                    const factored = factors ? Math.round((s1*factors.vocabF + s2*factors.excelF)*100/10)/100 : null;
                     return {...t, s1, s2, tot, factored};
                   }).sort((a,b) => factors ? (b.factored-a.factored) : (b.tot-a.tot));
                   const s1r = [...rows].sort((a,b)=>b.s1-a.s1).map(t=>t.id);
                   const s2r = [...rows].sort((a,b)=>b.s2-a.s2).map(t=>t.id);
+                  const s1Ties=new Set(),s2Ties=new Set(),totTies=new Set(); for(let a=0;a<rows.length;a++)for(let b=a+1;b<rows.length;b++){const x=rows[a],y=rows[b]; if(x.s1===y.s1){s1Ties.add(x.id);s1Ties.add(y.id);} if(x.s2===y.s2){s2Ties.add(x.id);s2Ties.add(y.id);} if(x.tot===y.tot){totTies.add(x.id);totTies.add(y.id);}}
                   return (<div>
-                    {factors && <div style={{fontSize:12,color:"var(--ac)",marginBottom:3,textAlign:"center"}}>{factors.label} factoring</div>}
+
                     {rows.map((t,i)=>(
-                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:5,padding:"5px 5px",borderBottom:"1px solid var(--bd)",fontSize:15}}>
+                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:5,padding:"5px 5px",borderBottom:totTies.has(t.id)?"1px solid var(--dng)":"1px solid var(--bd)",fontSize:15,background:totTies.has(t.id)?"rgba(239,68,68,.08)":"transparent"}}>
                         <div style={{textAlign:"center",minWidth:24,flexShrink:0,paddingTop:2}}>
-                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:22,height:22,borderRadius:"50%",fontSize:13,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
-                          <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:"50%",fontSize:16,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
                         </div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:15,marginBottom:3}}>{t.name}</div>
                           <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:"var(--t3)"}}>
-                            <div style={{textAlign:"center"}}>
-                              <div style={{color:boxFor(t.s1).color,fontWeight:600}}>{t.s1}</div>
-                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s1r.indexOf(t.id)+1)}</div>
+                            <div style={{textAlign:"center",background:s1Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <TapScore value={t.s1} color={boxFor(t.s1).color} onCommit={v=>handleScore(`${t.id}_${judgeCap}_1`,v)} locked={!!lockedTotes[activeTote]} />
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{(s1r.indexOf(t.id)+1)}</div>
                             </div>
-                            <div style={{textAlign:"center"}}>
-                              <div style={{color:boxFor(t.s2).color,fontWeight:600}}>{t.s2}</div>
-                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(s2r.indexOf(t.id)+1)}</div>
+                            <div style={{textAlign:"center",background:s2Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <TapScore value={t.s2} color={boxFor(t.s2).color} onCommit={v=>handleScore(`${t.id}_${judgeCap}_2`,v)} locked={!!lockedTotes[activeTote]} />
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{(s2r.indexOf(t.id)+1)}</div>
                             </div>
-                            <div style={{textAlign:"center"}}>
-                              <div style={{fontWeight:600,color:"var(--t1)"}}>{fmtTotal(t.tot)}</div>
-                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+                            <div style={{textAlign:"center",background:totTies.has(t.id)?"rgba(239,68,68,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <div style={{fontWeight:700,fontSize:22,color:totTies.has(t.id)?"var(--dng)":"var(--t1)"}}>{fmtTotal(t.tot)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
                             </div>
-                            {factors && <div style={{textAlign:"center"}}>
-                              <div style={{fontWeight:700,color:"var(--ac)"}}>{t.factored.toFixed(2)}</div>
-                              <div style={{fontSize:11,color:"var(--t3)"}}>{ordinal(i+1)}</div>
-                            </div>}
+
                           </div>
                         </div>
                       </div>
@@ -1017,21 +1325,116 @@ export default function ThreeColumnApp() {
                   <tr key={t.id}>
                     <td style={{padding:"3px 6px",borderBottom:"1px solid var(--bd)",fontSize:14,fontWeight:500,verticalAlign:"top",whiteSpace:"nowrap"}}>{t.name}</td>
                     <td style={{padding:"2px 4px",borderBottom:"1px solid var(--bd)"}}>
-                      <textarea
-                        value={notes[t.id]||""}
-                        onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
-                        onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
-                        readOnly={!!lockedTotes[activeTote]}
-                        placeholder="..."
-                        rows={1}
-                        style={{width:"100%",padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:24,overflow:"hidden"}}
-                      />
+                      <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+                        <textarea
+                          value={notes[t.id]||""}
+                          onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                          ref={el=>{if(el){el.style.height="auto";el.style.height=el.scrollHeight+"px";}}} onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                          readOnly={!!lockedTotes[activeTote]}
+                          placeholder="..."
+                          rows={1}
+                          style={{flex:1,padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.3,minHeight:24,overflow:"hidden"}}
+                        />
+                        <label style={{flexShrink:0,cursor:"pointer",padding:"2px 4px",borderRadius:3,background:"var(--s3)",display:"flex",alignItems:"center",marginTop:1}}>
+                          <span style={{fontSize:14}}>📷</span>
+                          <input type="file" accept="image/*" capture="environment" onChange={e=>handlePhotoUpload(t.id,e.target.files[0])} style={{display:"none"}} />
+                        </label>
+                        {teamPhotos[t.id]&&<div style={{position:"relative",flexShrink:0,marginTop:1}}><img src={teamPhotos[t.id]} alt="" style={{width:32,height:32,borderRadius:4,objectFit:"cover",cursor:"pointer"}} onClick={()=>setViewingPhoto(teamPhotos[t.id])} /><button onClick={()=>removePhoto(t.id)} style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:"var(--dng)",color:"#fff",border:"none",fontSize:9,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button></div>}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          </>:<>
+          <div style={{display:"flex",flexDirection:"row",gap:6}}>
+            <div style={{flex:"0.7",minWidth:0,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
+              <Scale title={cap.sub1} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_1`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_1`,v)}/>
+            </div>
+            <div style={{flex:"0.7",minWidth:0,pointerEvents:lockedTotes[activeTote]?"none":"auto",opacity:lockedTotes[activeTote]?0.6:1}}>
+              <Scale title={cap.sub2} teams={curTeams} trackH={trackH} scores={Object.fromEntries(curTeams.map(t=>[t.id,scores[`${t.id}_${judgeCap}_2`]??50]))} onScore={(id,v)=>handleScore(`${id}_${judgeCap}_2`,v)}/>
+            </div>
+            {/* Ranking column */}
+            <div style={{minWidth:0,flex:"0 0 auto",width:Math.max(160, Math.min(260, curTeams.length > 6 ? 180 : 220)),display:"flex",flexDirection:"column"}}>
+              <div style={{textAlign:"center",marginBottom:2}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>Ranking</div>
+              </div>
+              <div style={{background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",padding:6,flex:1,overflowY:"auto",maxHeight:trackH}}>
+                {(()=>{
+                  const factors = getFactors(curTote.className, judgeCap);
+                  const rows = curTeams.map(t => {
+                    const s1 = scores[`${t.id}_${judgeCap}_1`]??50;
+                    const s2 = scores[`${t.id}_${judgeCap}_2`]??50;
+                    const tot = s1 + s2;
+                    const factored = factors ? Math.round((s1*factors.vocabF + s2*factors.excelF)*100/10)/100 : null;
+                    return {...t, s1, s2, tot, factored};
+                  }).sort((a,b) => factors ? (b.factored-a.factored) : (b.tot-a.tot));
+                  const s1r = [...rows].sort((a,b)=>b.s1-a.s1).map(t=>t.id);
+                  const s2r = [...rows].sort((a,b)=>b.s2-a.s2).map(t=>t.id);
+                  const s1Ties=new Set(),s2Ties=new Set(),totTies=new Set(); for(let a=0;a<rows.length;a++)for(let b=a+1;b<rows.length;b++){const x=rows[a],y=rows[b]; if(x.s1===y.s1){s1Ties.add(x.id);s1Ties.add(y.id);} if(x.s2===y.s2){s2Ties.add(x.id);s2Ties.add(y.id);} if(x.tot===y.tot){totTies.add(x.id);totTies.add(y.id);}}
+                  return (<div>
+
+                    {rows.map((t,i)=>(
+                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:5,padding:"5px 5px",borderBottom:totTies.has(t.id)?"1px solid var(--dng)":"1px solid var(--bd)",fontSize:15,background:totTies.has(t.id)?"rgba(239,68,68,.08)":"transparent"}}>
+                        <div style={{textAlign:"center",minWidth:24,flexShrink:0,paddingTop:2}}>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:"50%",fontSize:16,fontWeight:700,background:i===0?"#F59E0B":i===1?"#94A3B8":i===2?"#A0522D":"var(--s3)",color:i<3?"#000":"var(--t2)"}}>{i+1}</span>
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:15,marginBottom:3}}>{t.name}</div>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:14,color:"var(--t3)"}}>
+                            <div style={{textAlign:"center",background:s1Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <TapScore value={t.s1} color={boxFor(t.s1).color} onCommit={v=>handleScore(`${t.id}_${judgeCap}_1`,v)} locked={!!lockedTotes[activeTote]} />
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{(s1r.indexOf(t.id)+1)}</div>
+                            </div>
+                            <div style={{textAlign:"center",background:s2Ties.has(t.id)?"rgba(234,179,8,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <TapScore value={t.s2} color={boxFor(t.s2).color} onCommit={v=>handleScore(`${t.id}_${judgeCap}_2`,v)} locked={!!lockedTotes[activeTote]} />
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{(s2r.indexOf(t.id)+1)}</div>
+                            </div>
+                            <div style={{textAlign:"center",background:totTies.has(t.id)?"rgba(239,68,68,.2)":"transparent",borderRadius:3,padding:"1px 3px"}}>
+                              <div style={{fontWeight:700,fontSize:22,color:totTies.has(t.id)?"var(--dng)":"var(--t1)"}}>{fmtTotal(t.tot)}</div>
+                              <div style={{fontSize:11,color:"var(--t3)"}}>{([...rows].sort((a,b)=>b.tot-a.tot).findIndex(x=>x.id===t.id)+1)}</div>
+                            </div>
+
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>);
+                })()}
+              </div>
+            </div>
+            {/* Notes column */}
+            <div style={{minWidth:0,flex:"1.2",display:"flex",flexDirection:"column"}}>
+              <div style={{textAlign:"center",marginBottom:2}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:19,lineHeight:1.1}}>Notes</div>
+              </div>
+              <div style={{background:"var(--s1)",borderRadius:7,border:"1px solid var(--bd)",padding:6,flex:1,overflowY:"auto",maxHeight:trackH}}>
+                {curTeams.map(t=>(
+                  <div key={t.id} style={{padding:"4px 4px",borderBottom:"1px solid var(--bd)"}}>
+                    <div style={{fontSize:13,fontWeight:500,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{t.name}</div>
+                    <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+                      <textarea
+                        value={notes[t.id]||""}
+                        onChange={e=>{if(lockedTotes[activeTote])return;setNotes(p=>({...p,[t.id]:e.target.value}));setSaved(false);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                        ref={el=>{if(el){el.style.height="auto";el.style.height=el.scrollHeight+"px";}}} onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                        readOnly={!!lockedTotes[activeTote]}
+                        placeholder="..."
+                        rows={1}
+                        style={{flex:1,padding:"3px 6px",borderRadius:3,border:"1px solid var(--bd)",background:"var(--s2)",color:"var(--t1)",fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:"none",resize:"none",lineHeight:1.4,minHeight:28,overflow:"hidden"}}
+                      />
+                      <label style={{flexShrink:0,cursor:"pointer",padding:"2px 4px",borderRadius:3,background:"var(--s3)",display:"flex",alignItems:"center",marginTop:1}}>
+                        <span style={{fontSize:14}}>📷</span>
+                        <input type="file" accept="image/*" capture="environment" onChange={e=>handlePhotoUpload(t.id,e.target.files[0])} style={{display:"none"}} />
+                      </label>
+                      {teamPhotos[t.id]&&<div style={{position:"relative",flexShrink:0,marginTop:1}}><img src={teamPhotos[t.id]} alt="" style={{width:32,height:32,borderRadius:4,objectFit:"cover",cursor:"pointer"}} onClick={()=>setViewingPhoto(teamPhotos[t.id])} /><button onClick={()=>removePhoto(t.id)} style={{position:"absolute",top:-4,right:-4,width:14,height:14,borderRadius:"50%",background:"var(--dng)",color:"#fff",border:"none",fontSize:9,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button></div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          </>}
         </div>}
       </div>}
       {tab==="score"&&!cap&&<p style={{textAlign:"center",padding:30,color:"var(--t3)",fontSize:15}}>Select caption in Settings.</p>}
@@ -1102,16 +1505,10 @@ export default function ThreeColumnApp() {
             <p style={{marginTop:4}}>You can <b>drag tabs</b> left and right to reorder them. Your custom order is saved.</p>
 
             <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,color:"var(--t1)",marginBottom:4,marginTop:14}}>Scoring</h3>
-            <p>Each tote has three side-by-side columns:</p>
-            <p style={{marginTop:4}}><b>Left column</b> — Sub-caption 1 scale (Vocabulary, Composition, or Repertoire depending on your caption).</p>
-            <p><b>Middle column</b> — Sub-caption 2 scale (Excellence or Performance).</p>
-            <p><b>Right column</b> — Live ranking panel showing each team sorted by total, with ordinals under each score.</p>
+            <p>{layout==="2col"?"Each tote has two scoring scales on top, with ranking and notes side by side below.":layout==="3col"?"Each tote has three side-by-side columns (scales + ranking) with notes below.":"Each tote has four side-by-side columns: both scales, ranking, and notes."}</p>
             <p style={{marginTop:6}}>The scales are color-coded by WGI box: <span style={{color:"#DC2626"}}>Box 1 (0-6)</span>, <span style={{color:"#F97316"}}>Box 2 (7-29)</span>, <span style={{color:"#EAB308"}}>Box 3 (30-59)</span>, <span style={{color:"#22C55E"}}>Box 4 (60-89)</span>, <span style={{color:"#3B82F6"}}>Box 5 (90-100)</span>. Dashed lines mark the thirds within each box.</p>
             <p style={{marginTop:4}}><b>Drag team chips</b> up and down to set scores. Scores are whole numbers 0-100. Chips automatically spread apart so they never overlap.</p>
             <p style={{marginTop:4}}>Totals display as XX.X (divided by 10). For <b>Regional A</b> and <b>A Class</b> on EQ/MV captions, a factored score appears using the WGI weighting (RA: 60/140, A: 70/130).</p>
-
-            <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,color:"var(--t1)",marginBottom:4,marginTop:14}}>Notes</h3>
-            <p>Below the scoring columns is a notes table with a text field for each team in that tote. Use this for commentary during performances. Notes auto-save and are included in exports.</p>
 
             <h3 style={{fontFamily:"'DM Sans',sans-serif",fontSize:20,color:"var(--t1)",marginBottom:4,marginTop:14}}>Summary & Export</h3>
             <p>The <b>Summary</b> tab shows ranked results for every tote with ordinals for each sub-caption and total. Use the export buttons to download your scores as a <b>spreadsheet (.xlsx)</b> or <b>PDF</b>. Each tote becomes a separate sheet/page with performance order, notes, and a ranked summary below. Export buttons are also available in Settings under Backup & Restore.</p>
@@ -1124,6 +1521,14 @@ export default function ThreeColumnApp() {
             <p style={{marginTop:4}}><b>Clear Totes</b> removes teams, scores, and notes but keeps your caption, event info, and custom classes. <b>Reset</b> erases everything and returns to a fresh start.</p>
             <p style={{marginTop:4}}>Use <b>Download Backup</b> in Settings before a competition for extra protection. Your backup file can be restored on any device.</p>
           </div>
+        </div>
+      </div>
+    )}
+    {viewingPhoto && (
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(4px)"}} onClick={()=>setViewingPhoto(null)}>
+        <div style={{position:"relative",width:"90vw",maxWidth:600}}>
+          <img src={viewingPhoto} alt="" style={{width:"100%",borderRadius:8,objectFit:"contain"}} />
+          <button onClick={()=>setViewingPhoto(null)} style={{position:"absolute",top:-12,right:-12,width:28,height:28,borderRadius:"50%",background:"var(--s2)",border:"1px solid var(--bd)",color:"var(--t1)",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button>
         </div>
       </div>
     )}
